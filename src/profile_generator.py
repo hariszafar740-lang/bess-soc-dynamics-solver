@@ -24,9 +24,10 @@ class LoadProfileGenerator:
     def dynamic_grid_step(total_time=3600, dt=1.0):
         """Generates dynamic grid load steps alternating between charging and discharging."""
         steps = int(total_time / dt)
-        np.random.seed(42)
         interval = 60  # Hold constant current for 60 seconds
         num_intervals = int(np.ceil(steps / interval))
-        raw_steps = np.random.uniform(-3.0, 5.0, num_intervals)
+        # Local, seeded generator: deterministic output without reseeding NumPy's global RNG.
+        rng = np.random.RandomState(42)
+        raw_steps = rng.uniform(-3.0, 5.0, num_intervals)
         profile = np.repeat(raw_steps, interval)[:steps]
         return profile
