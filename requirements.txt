@@ -1,0 +1,3 @@
+# Runtime dependencies (tested with Python 3.10-3.12; numpy 2.4.6, matplotlib 3.11.2)
+numpy>=1.24,<3
+matplotlib>=3.7,<4
