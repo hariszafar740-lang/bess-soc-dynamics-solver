@@ -1,0 +1,26 @@
+name: Bug / Numerical Discrepancy Report
+description: Report a physical equation error, numerical instability, or test failure
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Discrepancy Summary
+      description: Concise description of the unexpected numerical or physical behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal Reproducible Example
+      description: Exact Python snippet, inputs (current, SoC, temperature, dt), and observed vs. analytical output.
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Python & NumPy Version
+      placeholder: "Python 3.12, NumPy 2.x"
+    validations:
+      required: true
