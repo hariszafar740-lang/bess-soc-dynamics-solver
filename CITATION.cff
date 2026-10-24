@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+title: "Battery Energy Storage System (BESS) Electro-Thermal & SoC Dynamics Solver"
+message: "If you use this battery equivalent-circuit or electro-thermal solver in academic, research, or engineering work, please cite it using the metadata below."
+type: software
+authors:
+  - given-names: Haris
+    family-names: Zafar
+    alias: hariszafar740-lang
+repository-code: "https://github.com/hariszafar740-lang/bess-soc-dynamics-solver"
+abstract: >-
+  Reduced-order electro-thermal simulation engine for lithium-ion battery
+  energy storage cells, featuring unconditionally stable exact exponential
+  integration of RC polarization and lumped Joule heat balance, reference-anchored
+  Arrhenius resistance scaling, Coulomb-counted SoC, and closed-form verification.
+keywords:
+  - battery-energy-storage
+  - lithium-ion
+  - equivalent-circuit-model
+  - electro-thermal
+  - state-of-charge
+  - python
+license: MIT
+version: 0.2.0
+date-released: "2026-10-24"

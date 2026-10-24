@@ -1,0 +1,19 @@
+name: Physics Module / Solver Enhancement
+description: Propose a new battery model extension, state estimator, or benchmark
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Engineering Motivation & Governing Equations
+      description: Describe the physical formulation, assumptions, and literature reference.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification Plan
+      description: How will the enhancement be validated (closed-form solution, conservation bound, or reference benchmark)?
+    validations:
+      required: true

@@ -1,6 +1,8 @@
 # Battery Energy Storage System (BESS) SoC & Dynamics Solver
 
-![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
+[![CI](https://github.com/hariszafar740-lang/bess-soc-dynamics-solver/actions/workflows/ci.yml/badge.svg)](https://github.com/hariszafar740-lang/bess-soc-dynamics-solver/actions/workflows/ci.yml)
+![Python Version](https://img.shields.io/badge/python-3.10%E2%80%933.13-blue)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Domain](https://img.shields.io/badge/Focus-Grid%20Storage%20%26%20Electrochemical%20Modeling-green)
 
 Python engine implementing a **1RC Thevenin Equivalent Circuit Model (ECM)** for a single Li-ion cell, a **lumped-parameter electro-thermal model** with Arrhenius-corrected resistances, **Coulomb-counting SoC**, load-profile synthesis, a temperature/C-rate sensitivity sweep, and plotting.
@@ -16,8 +18,8 @@ Python engine implementing a **1RC Thevenin Equivalent Circuit Model (ECM)** for
 | `src/sensitivity_analysis.py` | `run_thermal_sensitivity_sweep`, `SimulationError` |
 | `src/profile_generator.py` | Pulsed and random grid load profiles |
 | `src/visualizer.py` | 4-panel dynamic response plot |
-| `main.py` | Runs the default sensitivity sweep and prints a table |
-| `tests/` | Regression and validation test suite (87 tests) |
+| `main.py` | Regenerates `results/bess_dynamic_response.png` and prints the 16-case electro-thermal sweep |
+| `tests/` | Regression and validation test suite (91 tests) |
 
 ## Model equations
 
@@ -115,7 +117,7 @@ Checks performed (all automated in `tests/`):
 
 ## Installation
 
-Requires Python 3.10 or newer (CI runs 3.10 and 3.12).
+Requires Python 3.10 or newer (GitHub Actions CI verifies Python 3.10, 3.11, 3.12, and 3.13).
 
 ```bash
 python -m venv bess_env
@@ -145,6 +147,12 @@ Test modules:
 
 Note on evidence: the new test modules import the new API (`set_temperature`, `SimulationError`, `arrhenius_factor`). They cannot be run against the original source, so the original defects were demonstrated by direct reproduction scripts rather than by these tests failing on the old code.
 
-## Artifacts
+## Reproducible Dynamic Simulation Artifact
 
-`results/bess_dynamic_response.png` was committed before this change. No script in this repository generates it, so its provenance (parameters and code version) is not documented. Regenerate it with `visualizer.plot_bess_response` if an up-to-date figure is needed.
+Running `python main.py` deterministically executes a coupled electro-thermal `3C` (`7.5 A` on `2.5 Ah`, `300 s` discharge / `300 s` rest, `T_amb = 25 °C`, `dt = 1.0 s`, `1800 s`) trajectory and exports `results/bess_dynamic_response.png` (`Min V_term = 3.181 V`, `Peak T_cell = 30.97 °C`, `Final SoC = 25.0%`):
+
+![Coupled 1RC Electro-Thermal BESS Dynamic Response](results/bess_dynamic_response.png)
+
+## Citation
+
+Machine-readable citation metadata is provided in [`CITATION.cff`](CITATION.cff).

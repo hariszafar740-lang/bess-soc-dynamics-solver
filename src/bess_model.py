@@ -1,7 +1,6 @@
 import math
 import warnings
 
-
 from src.thermal_model import EA_J_MOL, T_REF_K, arrhenius_factor, check_temperature_k
 
 SOC_TOL = 1e-12  # Numerical tolerance on the SoC domain check
