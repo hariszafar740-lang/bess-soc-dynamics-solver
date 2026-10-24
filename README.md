@@ -5,21 +5,23 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Domain](https://img.shields.io/badge/Focus-Grid%20Storage%20%26%20Electrochemical%20Modeling-green)
 
-Python engine implementing a **1RC Thevenin Equivalent Circuit Model (ECM)** for a single Li-ion cell, a **lumped-parameter electro-thermal model** with Arrhenius-corrected resistances, **Coulomb-counting SoC**, load-profile synthesis, a temperature/C-rate sensitivity sweep, and plotting.
+Python engine implementing both a baseline **1RC Thevenin Equivalent Circuit Model (ECM)** and a **chemistry-parameterized 2RC dual-polarization ECM (`NMC811` & `LFP`)** with **monotone PCHIP open-circuit potential splines**, **Plett one-state voltage hysteresis**, **Bernardi reversible entropic + irreversible Joule/polarization heat balances**, **Electrochemical Impedance Spectroscopy (`EIS`) Nyquist synthesis**, and **Arrhenius sensitivity sweeps**.
 
-> **Scope and validation status.** This is a reduced-order engineering model. It has been checked against closed-form solutions, conservation/analytic bounds, and step-size convergence (see *Engineering validation* below). It has **not** been fitted to or validated against measured cell data, and it does not represent any specific manufacturer's cell. Results must not be used as electrochemical or manufacturer-level predictions.
+> **Scope and validation status.** Equilibrium open-circuit voltage (`OCV`) and entropic (`dU/dT`) lookup tables in `src/cell_chemistry.py` are extracted at 1% SoC resolution from published electrode parameterizations in `PyBaMM 26.10.1.1` (`O'Regan et al., 2022` for LG M50 NMC811; `Prada et al., 2013` for A123 26650 LFP) and verified in CI (`tests/test_pybamm_crosscheck.py`). Dynamic 2RC resistances, capacitances, hysteresis scales, and lumped convective coefficients remain representative single-cell engineering values rather than pack-level or safety-certified manufacturer specifications.
 
 ## Repository layout
 
 | Path | Contents |
 |---|---|
-| `src/bess_model.py` | `LiIonBatteryModel` – 1RC ECM, OCV, Coulomb counting, temperature-corrected parameters |
+| `src/bess_model.py` | `LiIonBatteryModel` – baseline 1RC ECM, OCV polynomial, Coulomb counting, Arrhenius scaling |
+| `src/cell_chemistry.py` | `ChemistrySpec`, `MonotonePCHIP`, SHA-256-pinned `NMC811_LG_M50_5AH` (`ORegan2022`) & `LFP_A123_ANR26650_2P3AH` (`Prada2013`) records |
+| `src/ecm_2rc.py` | `TwoRCBatteryModel` – exact 2RC integration, Plett hysteresis, First-Law Bernardi heat balance, `compute_eis_nyquist` |
 | `src/thermal_model.py` | `ThermalBESSModel`, `arrhenius_factor`, shared reference constants and temperature envelope |
 | `src/sensitivity_analysis.py` | `run_thermal_sensitivity_sweep`, `SimulationError` |
-| `src/profile_generator.py` | Pulsed and random grid load profiles |
-| `src/visualizer.py` | 4-panel dynamic response plot |
-| `main.py` | Regenerates `results/bess_dynamic_response.png` and prints the 16-case electro-thermal sweep |
-| `tests/` | Regression and validation test suite (91 tests) |
+| `src/profile_generator.py` | Pulsed and deterministic grid load profiles |
+| `src/visualizer.py` | 4-panel 1RC dynamic plot and 4-panel 2RC multi-chemistry/EIS diagnostic figure |
+| `main.py` | Regenerates `results/*.png` figures and prints the electro-thermal & 2RC chemistry benchmarks |
+| `tests/` | Hermetic regression, First-Law conservation, EIS, and `PyBaMM 26.10.1.1` cross-check suite |
 
 ## Model equations
 
@@ -152,6 +154,20 @@ Note on evidence: the new test modules import the new API (`set_temperature`, `S
 Running `python main.py` deterministically executes a coupled electro-thermal `3C` (`7.5 A` on `2.5 Ah`, `300 s` discharge / `300 s` rest, `T_amb = 25 °C`, `dt = 1.0 s`, `1800 s`) trajectory and exports `results/bess_dynamic_response.png` (`Min V_term = 3.181 V`, `Peak T_cell = 30.97 °C`, `Final SoC = 25.0%`):
 
 ![Coupled 1RC Electro-Thermal BESS Dynamic Response](results/bess_dynamic_response.png)
+
+## Multi-Chemistry 2RC Dual-Polarization, Hysteresis, Bernardi Heat & EIS (`Module 2`)
+
+`src/cell_chemistry.py` and `src/ecm_2rc.py` extend the solver to a 5-state coupled electro-thermal system $x = [SoC,\; V_{rc,1},\; V_{rc,2},\; h,\; T_{cell}]$:
+
+$$V_{term}(t) = U_{ocv,ref}(SoC) + (T_{cell} - T_{ref})\frac{\partial U_{ocv}}{\partial T}(SoC) + M_h\,h(t) - I\,R_0(SoC, T_{cell}) - V_{rc,1}(t) - V_{rc,2}(t)$$
+
+$$m\,c_p\frac{dT_{cell}}{dt} = \underbrace{I^2 R_0 + \frac{1}{\Delta t}\sum_{k=1}^{2}\int_0^{\Delta t}\frac{V_{rc,k}(s)^2}{R_k}\,ds + p_{hyst}}_{\bar{Q}_{irrev} \ge 0} \;\underbrace{-\; I\,T_{cell}\,\frac{\partial U_{ocv}}{\partial T}(SoC)}_{Q_{rev}} - h_A(T_{cell} - T_{amb})$$
+
+- **Exact First-Law RC energy conservation:** $\int_0^{\Delta t} (V_{rc,k}(s)^2 / R_k)\,ds$ is evaluated analytically via `expm1`-stabilized $\phi_1(x) = (1 - e^{-x})/x$, conserving stored electrostatic energy $\frac{1}{2}C_k V_{rc,k}^2$ to $< 10^{-12}\text{ J}$ across arbitrary $\Delta t$ (`tests/test_ecm_2rc.py`).
+- **Published equilibrium potentials:** `NMC811_LG_M50_5AH` (`5.0 Ah`, O'Regan et al., *Electrochimica Acta* 425, 140700, 2022) captures endothermic entropic cooling ($Q_{rev} < 0$) above $\approx 38\%$ SoC and exothermic entropic heating ($Q_{rev} > 0$) at low SoC; `LFP_A123_ANR26650_2P3AH` (`2.3 Ah`, Prada et al., *J. Electrochem. Soc.* 160(4), A616, 2013) captures the flat $\approx 3.27\text{ V}$ two-phase plateau with $\pm 18\text{ mV}$ Plett hysteresis memory.
+- **Independent `PyBaMM` cross-validation:** `tests/test_pybamm_crosscheck.py` (`pip install -r requirements-validation.txt`) verifies both 101-point stoichiometric tables against `pybamm==26.10.1.1` to $< 5\,\mu\text{V}$ and dynamic 2RC `Thevenin` voltage/temperature trajectories to $< 0.4\text{ mV}$ and $< 2\text{ mK}$.
+
+![2RC Multi-Chemistry, Hysteresis, Bernardi Heat & EIS Comparison](results/chemistry_2rc_comparison.png)
 
 ## Citation
 

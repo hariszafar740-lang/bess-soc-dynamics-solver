@@ -101,3 +101,208 @@ def plot_bess_response(
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
+
+
+def plot_chemistry_2rc_comparison(
+    comp,
+    save_path: str = "results/chemistry_2rc_comparison.png",
+) -> None:
+    """Render 4-panel multi-chemistry 2RC, hysteresis, Bernardi heat & EIS figure."""
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    fig, axs = plt.subplots(2, 2, figsize=(13.8, 9.6))
+    ax_ocv, ax_hppc = axs[0, 0], axs[0, 1]
+    ax_heat, ax_eis = axs[1, 0], axs[1, 1]
+
+    soc_pct = comp.soc_curve * 100.0
+
+    # Panel (a): OCV(SoC) + LFP Hysteresis Band + NMC811 Entropic dU/dT
+    (l_nmc,) = ax_ocv.plot(
+        soc_pct,
+        comp.nmc_ocv_v,
+        color="#1d4ed8",
+        lw=2.1,
+        label="NMC811 OCV (LG M50, O'Regan 2022)",
+    )
+    (l_lfp,) = ax_ocv.plot(
+        soc_pct,
+        comp.lfp_ocv_v,
+        color="#059669",
+        lw=2.1,
+        label="LFP OCV (A123 26650, Prada 2013)",
+    )
+    hyst_fill = ax_ocv.fill_between(
+        soc_pct,
+        comp.lfp_hyst_lower_v * 1.0,
+        comp.lfp_hyst_upper_v * 1.0,
+        color="#10b981",
+        alpha=0.22,
+        label="LFP ±18 mV Hysteresis Envelope",
+    )
+    ax_ocv.set_title("(a) Equilibrium OCV & Entropic Coefficient", fontsize=10.8, fontweight="bold")
+    ax_ocv.set_xlabel("State of Charge SoC (%)", fontsize=9.5, fontweight="bold")
+    ax_ocv.set_ylabel("Equilibrium Potential U_ocv (V)", fontsize=9.5, fontweight="bold")
+    ax_ocv.set_xlim(0.0, 100.0)
+    ax_ocv.set_ylim(1.90, 4.55)
+    ax_ocv.grid(True, ls="--", alpha=0.42)
+
+    ax_dudt = ax_ocv.twinx()
+    ax_dudt.axhline(0.0, color="#94a3b8", lw=0.9, ls=":")
+    (l_dudt,) = ax_dudt.plot(
+        soc_pct,
+        comp.nmc_dudt_mv_k,
+        color="#dc2626",
+        lw=1.7,
+        ls="--",
+        label="NMC811 dU/dT (mV/K)",
+    )
+    ax_dudt.set_ylabel("dU_ocv / dT (mV/K)", fontsize=9.5, fontweight="bold", color="#b91c1c")
+    ax_dudt.set_ylim(-0.52, 0.30)
+    ax_ocv.legend(
+        handles=[l_nmc, l_lfp, hyst_fill, l_dudt],
+        loc="lower right",
+        fontsize=8.0,
+        framealpha=0.94,
+    )
+
+    # Panel (b): Bidirectional HPPC Overpotential Decomposition (V_term - U_ocv)
+    t_min = comp.nmc_hppc.time_s / 60.0
+    dv_nmc_mv = (comp.nmc_hppc.v_term_v - comp.nmc_hppc.u_ocv_v) * 1e3
+    dv_lfp_mv = (comp.lfp_hppc.v_term_v - comp.lfp_hppc.u_ocv_v) * 1e3
+    ax_hppc.axhline(0.0, color="#64748b", lw=0.9, ls=":")
+    ax_hppc.plot(t_min, dv_nmc_mv, color="#1d4ed8", lw=2.0, label="NMC811 ΔV = V_term - U_ocv")
+    ax_hppc.plot(t_min, dv_lfp_mv, color="#059669", lw=1.9, label="LFP ΔV (with Hysteresis Memory)")
+    ax_hppc.plot(
+        t_min,
+        -comp.nmc_hppc.v_rc1_v * 1e3,
+        color="#ea580c",
+        lw=1.5,
+        ls="--",
+        label="NMC811 -V_rc1 (Fast τ1 ≈ 18 s)",
+    )
+    ax_hppc.plot(
+        t_min,
+        -comp.nmc_hppc.v_rc2_v * 1e3,
+        color="#7c3aed",
+        lw=1.6,
+        ls="-.",
+        label="NMC811 -V_rc2 (Diffusion τ2 ≈ 240 s)",
+    )
+    ax_hppc.set_title(
+        "(b) Bidirectional HPPC Pulse-Relaxation Overpotential (80% SoC)",
+        fontsize=10.8,
+        fontweight="bold",
+    )
+    ax_hppc.set_xlabel("Time (minutes)", fontsize=9.5, fontweight="bold")
+    ax_hppc.set_ylabel("Overpotential V_term - U_ocv (mV)", fontsize=9.5, fontweight="bold")
+    ax_hppc.set_xlim(0.0, 30.0)
+    ax_hppc.set_ylim(-265.0, 215.0)
+    ax_hppc.grid(True, ls="--", alpha=0.42)
+    ax_hppc.legend(loc="lower right", fontsize=8.0, framealpha=0.94)
+
+    # Panel (c): Bernardi Reversible vs Irreversible Heat during 1C NMC811 Discharge
+    soc_dis_pct = comp.nmc_discharge_1c.soc * 100.0
+    q_irr = comp.nmc_discharge_1c.q_irrev_w
+    q_rev = comp.nmc_discharge_1c.q_rev_w
+    q_tot = comp.nmc_discharge_1c.q_total_w
+    ax_heat.axhline(0.0, color="#64748b", lw=0.9, ls=":")
+    ax_heat.plot(soc_dis_pct, q_irr, color="#ea580c", lw=1.9, label="Irreversible Q_irrev (Ohmic + 2RC)")
+    ax_heat.plot(soc_dis_pct, q_rev, color="#0d9488", lw=1.9, ls="--", label="Reversible Entropic Q_rev = -I·T·dU/dT")
+    ax_heat.plot(soc_dis_pct, q_tot, color="#7c3aed", lw=2.1, label="Net Bernardi Heat Q_total")
+    ax_heat.fill_between(
+        soc_dis_pct,
+        0.0,
+        q_rev,
+        where=(q_rev < 0.0),
+        color="#14b8a6",
+        alpha=0.18,
+        label="Endothermic Entropic Cooling (Q_rev < 0)",
+    )
+    ax_heat.fill_between(
+        soc_dis_pct,
+        0.0,
+        q_rev,
+        where=(q_rev >= 0.0),
+        color="#f97316",
+        alpha=0.18,
+        label="Exothermic Entropic Heating (Q_rev > 0)",
+    )
+    ax_heat.set_xlim(98.0, 4.0)  # Left-to-right follows 1C discharge progression
+    ax_heat.set_ylim(-0.35, 2.25)
+    ax_heat.set_title(
+        "(c) Bernardi Heat Decomposition (NMC811 1C Discharge, 98% → 4% SoC)",
+        fontsize=10.8,
+        fontweight="bold",
+    )
+    ax_heat.set_xlabel("State of Charge during 1C Discharge (%)", fontsize=9.5, fontweight="bold")
+    ax_heat.set_ylabel("Heat Generation Rate (W)", fontsize=9.5, fontweight="bold")
+    ax_heat.grid(True, ls="--", alpha=0.42)
+    ax_heat.legend(loc="upper left", fontsize=7.9, framealpha=0.94)
+
+    # Panel (d): Multi-Temperature EIS Nyquist Spectrum (NMC811 @ 50% SoC)
+    palette = {10: "#0284c7", 25: "#16a34a", 45: "#dc2626"}
+    for temp_c in (10, 25, 45):
+        eis = comp.eis_nmc_by_temp_c[temp_c]
+        z_re_mohm = eis.z_real_ohm * 1e3
+        z_im_mohm = eis.neg_z_imag_ohm * 1e3
+        ax_eis.plot(
+            z_re_mohm,
+            z_im_mohm,
+            color=palette[temp_c],
+            lw=2.0,
+            label=(
+                f"T = {temp_c} °C (R_dc = {(eis.r0_ohm + eis.r1_ohm + eis.r2_ohm) * 1e3:.1f} mΩ)"
+            ),
+        )
+        # Mark characteristic RC1 and RC2 semicircle peak frequencies
+        for f_pk in (eis.f_peak_rc1_hz, eis.f_peak_rc2_hz):
+            idx_pk = int(np.argmin(np.abs(eis.freq_hz - f_pk)))
+            ax_eis.scatter(
+                [z_re_mohm[idx_pk]],
+                [z_im_mohm[idx_pk]],
+                color=palette[temp_c],
+                s=22,
+                zorder=4,
+            )
+
+    eis_25 = comp.eis_nmc_by_temp_c[25]
+    idx1 = int(np.argmin(np.abs(eis.freq_hz - eis_25.f_peak_rc1_hz)))
+    idx2 = int(np.argmin(np.abs(eis.freq_hz - eis_25.f_peak_rc2_hz)))
+    ax_eis.annotate(
+        f"f_rc1 = {eis_25.f_peak_rc1_hz * 1e3:.1f} mHz",
+        xy=(eis_25.z_real_ohm[idx1] * 1e3, eis_25.neg_z_imag_ohm[idx1] * 1e3),
+        xytext=(11.2, 13.8),
+        fontsize=8.2,
+        color="#15803d",
+        fontweight="bold",
+        arrowprops={"arrowstyle": "->", "color": "#15803d", "lw": 1.0},
+    )
+    ax_eis.annotate(
+        f"f_rc2 = {eis_25.f_peak_rc2_hz * 1e3:.2f} mHz",
+        xy=(eis_25.z_real_ohm[idx2] * 1e3, eis_25.neg_z_imag_ohm[idx2] * 1e3),
+        xytext=(24.0, 20.5),
+        fontsize=8.2,
+        color="#15803d",
+        fontweight="bold",
+        arrowprops={"arrowstyle": "->", "color": "#15803d", "lw": 1.0},
+    )
+    ax_eis.set_title(
+        "(d) 2RC EIS Nyquist Impedance Spectrum (NMC811 @ 50% SoC, 0.01 mHz–1 kHz)",
+        fontsize=10.8,
+        fontweight="bold",
+    )
+    ax_eis.set_xlabel("Re{Z(jω)} (mΩ)", fontsize=9.5, fontweight="bold")
+    ax_eis.set_ylabel("-Im{Z(jω)} (mΩ)", fontsize=9.5, fontweight="bold")
+    ax_eis.set_xlim(10.0, 92.0)
+    ax_eis.set_ylim(0.0, 26.0)
+    ax_eis.grid(True, ls="--", alpha=0.42)
+    ax_eis.legend(loc="upper right", fontsize=8.1, framealpha=0.94)
+
+    fig.suptitle(
+        "Chemistry-Parameterized 2RC Dual-Polarization ECM: NMC811 vs. LFP, Hysteresis, Bernardi Heat & EIS",
+        fontsize=12.2,
+        fontweight="bold",
+        y=0.992,
+    )
+    plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.972))
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
