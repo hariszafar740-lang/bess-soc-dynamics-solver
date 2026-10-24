@@ -1,5 +1,7 @@
 import numpy as np
+
 from src.profile_generator import LoadProfileGenerator
+
 
 def test_pulse_profile_shape_and_bounds():
     profile = LoadProfileGenerator.pulse_discharge(total_time=600, i_pulse=5.0, dt=1.0)
