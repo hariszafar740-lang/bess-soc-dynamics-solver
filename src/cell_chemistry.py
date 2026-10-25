@@ -212,6 +212,8 @@ class ChemistrySpec:
     mass_kg: float = 0.068
     cp_j_kgk: float = 825.0
     h_a_w_k: float = 0.35
+    core_heat_capacity_fraction: float = 0.82
+    r_core_surf_k_w: float = 1.90
     t_ref_k: float = T_REF_K
     soc_grid: tuple[float, ...] = _SOC_GRID_101
     ocv_v_grid: tuple[float, ...] = _NMC811_OREGAN2022_OCV_V
@@ -231,11 +233,16 @@ class ChemistrySpec:
             ("c2_ref_f", self.c2_ref_f),
             ("mass_kg", self.mass_kg),
             ("cp_j_kgk", self.cp_j_kgk),
+            ("r_core_surf_k_w", self.r_core_surf_k_w),
         ):
             if not math.isfinite(val) or val <= 0.0:
                 raise ValueError(f"{label} must be finite and > 0, got {val!r}")
         if self.hysteresis_max_v < 0.0 or self.hysteresis_rate_gamma < 0.0:
             raise ValueError("hysteresis parameters must be >= 0")
+        if not math.isfinite(self.core_heat_capacity_fraction) or not (
+            0.0 < self.core_heat_capacity_fraction < 1.0
+        ):
+            raise ValueError("core_heat_capacity_fraction must lie strictly in (0, 1)")
         if len(self.soc_grid) != len(self.ocv_v_grid) or len(self.soc_grid) != len(self.dudt_v_per_k_grid):
             raise ValueError("soc_grid, ocv_v_grid, and dudt_v_per_k_grid must have identical length")
         if np.any(np.diff(np.asarray(self.ocv_v_grid, dtype=float)) < 0.0):
@@ -271,6 +278,8 @@ NMC811_LG_M50_5AH = ChemistrySpec(
     mass_kg=0.068,
     cp_j_kgk=825.0,
     h_a_w_k=0.35,
+    core_heat_capacity_fraction=0.82,
+    r_core_surf_k_w=1.95,
     soc_grid=_SOC_GRID_101,
     ocv_v_grid=_NMC811_OREGAN2022_OCV_V,
     dudt_v_per_k_grid=_NMC811_OREGAN2022_DUDT_V_PER_K,
@@ -305,6 +314,8 @@ LFP_A123_ANR26650_2P3AH = ChemistrySpec(
     mass_kg=0.076,
     cp_j_kgk=1100.0,
     h_a_w_k=0.38,
+    core_heat_capacity_fraction=0.80,
+    r_core_surf_k_w=1.75,
     soc_grid=_SOC_GRID_101,
     ocv_v_grid=_LFP_PRADA2013_OCV_V,
     dudt_v_per_k_grid=tuple(0.0 for _ in _SOC_GRID_101),
