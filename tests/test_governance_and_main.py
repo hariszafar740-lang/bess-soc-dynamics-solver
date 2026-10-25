@@ -10,7 +10,7 @@ import src
 
 
 def test_public_package_exports_and_version():
-    assert src.__version__ == "0.3.0"
+    assert src.__version__ == "0.4.0"
     for symbol in (
         "LiIonBatteryModel",
         "ThermalBESSModel",
@@ -35,6 +35,15 @@ def test_public_package_exports_and_version():
         "ChemistryComparisonResult",
         "run_chemistry_comparison_benchmark",
         "plot_chemistry_2rc_comparison",
+        "CoulombCountingEstimator",
+        "ExtendedKalmanFilterEstimator",
+        "UnscentedKalmanFilterEstimator",
+        "EstimatorStepResult",
+        "ChemistryEstimationRun",
+        "SoCEstimationBenchmarkResult",
+        "run_single_chemistry_estimation",
+        "run_soc_estimation_benchmark",
+        "plot_soc_estimation_benchmark",
     ):
         assert hasattr(src, symbol)
 
@@ -58,9 +67,20 @@ def test_generate_chemistry_comparison_figure_reproducible(tmp_path):
     assert metrics["nmc_1c_max_q_rev_w"] > 0.50
 
 
+def test_generate_soc_estimation_figure_reproducible(tmp_path):
+    fig_path = tmp_path / "soc_ekf_ukf_benchmark.png"
+    metrics = main_mod.generate_soc_estimation_figure(save_path=str(fig_path))
+    assert fig_path.is_file() and fig_path.stat().st_size > 50_000
+    assert metrics["nmc_rmse_cc_pct"] > 20.0
+    assert metrics["nmc_rmse_ekf_pct"] < 2.0
+    assert metrics["nmc_rmse_ukf_pct"] < 2.0
+    assert metrics["lfp_rmse_ukf_pct"] < metrics["lfp_rmse_ekf_pct"]
+
+
 def test_main_entrypoint_prints_sweep_without_runaway_overclaim(capsys, tmp_path, monkeypatch):
     real_ref = main_mod.generate_reference_dynamic_figure
     real_chem = main_mod.generate_chemistry_comparison_figure
+    real_soc = main_mod.generate_soc_estimation_figure
     monkeypatch.setattr(
         main_mod,
         "generate_reference_dynamic_figure",
@@ -71,10 +91,16 @@ def test_main_entrypoint_prints_sweep_without_runaway_overclaim(capsys, tmp_path
         "generate_chemistry_comparison_figure",
         lambda: real_chem(save_path=str(tmp_path / "fig2.png")),
     )
+    monkeypatch.setattr(
+        main_mod,
+        "generate_soc_estimation_figure",
+        lambda: real_soc(save_path=str(tmp_path / "fig3.png")),
+    )
     main_mod.main()
     out = capsys.readouterr().out
     assert "BESS ELECTRO-THERMAL PARAMETER SENSITIVITY" in out
     assert "2RC Chemistry Benchmark (NMC811 vs LFP)" in out
+    assert "Closed-Loop SoC RMSE" in out
     assert "DAY 14" not in out
     assert "THERMAL RUNAWAY RISK" not in out
 
@@ -100,6 +126,7 @@ def test_governance_files_and_readme_asset_integrity():
     local_imgs = [p for p in re.findall(r"!\[[^\]]*\]\(([^)]+)\)", readme) if not p.startswith("http")]
     assert "results/bess_dynamic_response.png" in local_imgs
     assert "results/chemistry_2rc_comparison.png" in local_imgs
+    assert "results/soc_ekf_ukf_benchmark.png" in local_imgs
     for img_rel in local_imgs:
         img_file = root / img_rel
         assert img_file.is_file() and img_file.stat().st_size > 30_000
