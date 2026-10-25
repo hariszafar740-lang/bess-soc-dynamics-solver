@@ -515,3 +515,214 @@ def plot_soc_estimation_benchmark(
     plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.972))
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
+
+
+def plot_thermal_sop_derating(
+    bench,
+    save_path: str = "results/thermal_sop_derating.png",
+) -> None:
+    """Render 4-panel 2-node radial thermal gradient, CC-CV taper & SOP derating figure."""
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    fig, axs = plt.subplots(2, 2, figsize=(13.8, 9.6))
+    ax_th, ax_cccv = axs[0, 0], axs[0, 1]
+    ax_sop, ax_derate = axs[1, 0], axs[1, 1]
+
+    # Panel (a): 2-Node Core vs Surface vs Lumped Thermal Divergence (3C/2.2C Pulsed Load)
+    p = bench.pulse_2node
+    t_min_p = p.time_s / 60.0
+    ax_th.plot(
+        t_min_p,
+        p.t_core_c,
+        color="#dc2626",
+        lw=2.1,
+        label=f"2-Node Core T_core (Peak {p.t_core_c.max():.1f} °C)",
+    )
+    ax_th.plot(
+        t_min_p,
+        p.t_surf_c,
+        color="#2563eb",
+        lw=2.0,
+        label=f"2-Node Surface T_surf (Peak {p.t_surf_c.max():.1f} °C)",
+    )
+    ax_th.plot(
+        t_min_p,
+        p.t_lumped_c,
+        color="#475569",
+        lw=1.7,
+        ls="--",
+        label=f"1-Node Lumped T_cell (Underpredicts Core by {p.peak_core_vs_lumped_delta_c:.1f} °C)",
+    )
+    ax_th.fill_between(
+        t_min_p,
+        p.t_surf_c,
+        p.t_core_c,
+        color="#f97316",
+        alpha=0.20,
+        label=f"Radial Gradient ΔT_cs (Peak {p.peak_core_surf_delta_c:.2f} °C)",
+    )
+    ax_th.set_title(
+        "(a) 2-Node Radial Core–Surface Thermal Divergence (NMC811 3C/2.2C Pulses)",
+        fontsize=10.5,
+        fontweight="bold",
+    )
+    ax_th.set_xlabel("Time (minutes)", fontsize=9.5, fontweight="bold")
+    ax_th.set_ylabel("Temperature (°C)", fontsize=9.5, fontweight="bold")
+    ax_th.set_xlim(0.0, 30.0)
+    ax_th.set_ylim(24.0, 44.5)
+    ax_th.grid(True, ls="--", alpha=0.42)
+    ax_th.legend(loc="upper left", fontsize=7.9, framealpha=0.95)
+
+    # Panel (b): Zero-Overshoot 2C CC-CV Fast-Charge Taper (NMC811 vs LFP)
+    nmc_c = bench.nmc_cccv
+    lfp_c = bench.lfp_cccv
+    t_nmc_m = nmc_c.time_s / 60.0
+    t_lfp_m = lfp_c.time_s / 60.0
+
+    (l_inmc,) = ax_cccv.plot(
+        t_nmc_m,
+        -nmc_c.current_a / nmc_c.spec.nominal_capacity_ah,
+        color="#1d4ed8",
+        lw=2.0,
+        label=f"NMC811 Charge Rate (CC→CV @ {nmc_c.cc_to_cv_time_s / 60.0:.1f} min)",
+    )
+    (l_ilfp,) = ax_cccv.plot(
+        t_lfp_m,
+        -lfp_c.current_a / lfp_c.spec.nominal_capacity_ah,
+        color="#059669",
+        lw=2.0,
+        label=f"LFP Charge Rate (CC→CV @ {lfp_c.cc_to_cv_time_s / 60.0:.1f} min)",
+    )
+    ax_cccv.set_title(
+        "(b) Closed-Loop 2C CC-CV Fast-Charge Taper (Zero Voltage Overshoot)",
+        fontsize=10.5,
+        fontweight="bold",
+    )
+    ax_cccv.set_xlabel("Charge Time (minutes)", fontsize=9.5, fontweight="bold")
+    ax_cccv.set_ylabel("Charge C-Rate |I_chg| / Q_nom (C)", fontsize=9.5, fontweight="bold")
+    ax_cccv.set_xlim(0.0, 62.0)
+    ax_cccv.set_ylim(0.0, 2.65)
+    ax_cccv.grid(True, ls="--", alpha=0.42)
+
+    ax_v = ax_cccv.twinx()
+    (l_vnmc,) = ax_v.plot(
+        t_nmc_m,
+        nmc_c.v_term_v,
+        color="#1d4ed8",
+        lw=1.6,
+        ls="--",
+        label="NMC811 V_term (Clamped ≤ 4.200 V)",
+    )
+    (l_vlfp,) = ax_v.plot(
+        t_lfp_m,
+        lfp_c.v_term_v,
+        color="#059669",
+        lw=1.6,
+        ls="--",
+        label="LFP V_term (Clamped ≤ 3.600 V)",
+    )
+    ax_v.set_ylabel("Terminal Voltage V_term (V)", fontsize=9.5, fontweight="bold", color="#334155")
+    ax_v.set_ylim(3.05, 4.68)
+    ax_cccv.legend(
+        handles=[l_inmc, l_ilfp, l_vnmc, l_vlfp],
+        loc="upper right",
+        fontsize=7.8,
+        framealpha=0.95,
+    )
+
+    # Panel (c): Receding-Horizon State-of-Power (SOP) Envelope vs SoC & Horizon
+    soc_pct = bench.soc_grid * 100.0
+    h_styles = {
+        10.0: ("#1d4ed8", "-", "10 s Pulse Horizon (+Dis / -Chg)"),
+        30.0: ("#7c3aed", "--", "30 s Dispatch Horizon (+Dis / -Chg)"),
+        120.0: ("#dc2626", "-.", "120 s Sustained Horizon (+Dis / -Chg)"),
+    }
+    ax_sop.axhline(0.0, color="#64748b", lw=0.9, ls=":")
+    for h_s in bench.horizons_s:
+        col, ls_style, lbl = h_styles[h_s]
+        ax_sop.plot(
+            soc_pct,
+            bench.p_dis_by_horizon_w[h_s],
+            color=col,
+            lw=2.0,
+            ls=ls_style,
+            label=lbl,
+        )
+        ax_sop.plot(
+            soc_pct,
+            -bench.p_chg_by_horizon_w[h_s],
+            color=col,
+            lw=1.8,
+            ls=ls_style,
+            alpha=0.82,
+        )
+    ax_sop.annotate(
+        "Discharge Envelope (+W)",
+        xy=(34.0, 38.0),
+        fontsize=8.6,
+        fontweight="bold",
+        color="#0f172a",
+    )
+    ax_sop.annotate(
+        "Regen / Charge Envelope (-W)",
+        xy=(14.0, -33.0),
+        fontsize=8.6,
+        fontweight="bold",
+        color="#0f172a",
+    )
+    ax_sop.set_title(
+        "(c) Receding-Horizon BMS State-of-Power Envelope vs. SoC (25 °C)",
+        fontsize=10.5,
+        fontweight="bold",
+    )
+    ax_sop.set_xlabel("State of Charge SoC (%)", fontsize=9.5, fontweight="bold")
+    ax_sop.set_ylabel("Signed Power Limit (+Dis / -Chg, W)", fontsize=9.5, fontweight="bold")
+    ax_sop.set_xlim(5.0, 98.0)
+    ax_sop.set_ylim(-64.0, 98.0)
+    ax_sop.grid(True, ls="--", alpha=0.42)
+    ax_sop.legend(loc="upper right", fontsize=7.9, framealpha=0.95)
+
+    # Panel (d): Thermal & Plating BMS Derating Curve (-18 °C to +49 °C, 60 s Horizon)
+    tg = bench.temp_grid_c
+    ax_derate.plot(
+        tg,
+        bench.p_dis_vs_temp_w,
+        color="#dc2626",
+        lw=2.2,
+        marker="o",
+        ms=3.6,
+        label="60 s Max Discharge Power P_dis,max",
+    )
+    ax_derate.plot(
+        tg,
+        bench.p_chg_vs_temp_w,
+        color="#1d4ed8",
+        lw=2.1,
+        marker="s",
+        ms=3.4,
+        ls="--",
+        label="60 s Max Charge Power P_chg,max (Li-Plating Taper < 15 °C)",
+    )
+    ax_derate.axvspan(-18.0, -9.0, color="#38bdf8", alpha=0.14, label="Cold Voltage-Sag Bottleneck")
+    ax_derate.axvspan(40.0, 49.0, color="#f97316", alpha=0.16, label="T_core ≤ 48 °C Thermal Derating")
+    ax_derate.axvline(0.0, color="#1e40af", lw=1.1, ls=":", label="0 °C Sub-Zero Charge Lockout")
+    ax_derate.set_title(
+        "(d) Multi-Regime BMS Thermal & Plating Power Derating (35% SoC, 60 s)",
+        fontsize=10.5,
+        fontweight="bold",
+    )
+    ax_derate.set_xlabel("Initial Cell / Ambient Temperature (°C)", fontsize=9.5, fontweight="bold")
+    ax_derate.set_ylabel("Admissible Horizon Power (W)", fontsize=9.5, fontweight="bold")
+    ax_derate.set_xlim(-18.0, 49.0)
+    ax_derate.set_ylim(0.0, 86.0)
+    ax_derate.grid(True, ls="--", alpha=0.42)
+    ax_derate.legend(loc="upper left", fontsize=7.6, framealpha=0.95)
+
+    fig.suptitle(
+        "Coupled 2-Node Radial Thermal Dynamics, Zero-Overshoot CC-CV & Horizon SOP BMS Derating",
+        fontsize=12.0,
+        fontweight="bold",
+        y=0.992,
+    )
+    plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.972))
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)

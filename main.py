@@ -1,6 +1,7 @@
 import numpy as np
 
 from src.bess_model import LiIonBatteryModel
+from src.bms_thermal_sop import run_thermal_sop_benchmark
 from src.ecm_2rc import run_chemistry_comparison_benchmark
 from src.profile_generator import LoadProfileGenerator
 from src.sensitivity_analysis import run_thermal_sensitivity_sweep
@@ -10,6 +11,7 @@ from src.visualizer import (
     plot_bess_response,
     plot_chemistry_2rc_comparison,
     plot_soc_estimation_benchmark,
+    plot_thermal_sop_derating,
 )
 
 
@@ -91,10 +93,27 @@ def generate_soc_estimation_figure(
     }
 
 
+def generate_thermal_sop_figure(
+    save_path: str = "results/thermal_sop_derating.png",
+) -> dict[str, float]:
+    """Run the 2-node radial thermal, CC-CV taper & SOP BMS benchmark and export Figure 4."""
+    bench = run_thermal_sop_benchmark()
+    plot_thermal_sop_derating(bench, save_path=save_path)
+    return {
+        "peak_core_surf_delta_c": bench.pulse_2node.peak_core_surf_delta_c,
+        "nmc_cc_to_cv_min": bench.nmc_cccv.cc_to_cv_time_s / 60.0,
+        "lfp_cc_to_cv_min": bench.lfp_cccv.cc_to_cv_time_s / 60.0,
+        "nmc_overshoot_v": bench.nmc_cccv.max_v_overshoot_v,
+        "lfp_overshoot_v": bench.lfp_cccv.max_v_overshoot_v,
+        "sop_30s_peak_dis_w": float(np.max(bench.p_dis_by_horizon_w[30.0])),
+    }
+
+
 def main() -> None:
     ref_metrics = generate_reference_dynamic_figure()
     chem_metrics = generate_chemistry_comparison_figure()
     est_metrics = generate_soc_estimation_figure()
+    sop_metrics = generate_thermal_sop_figure()
 
     print("=" * 75)
     print("BESS ELECTRO-THERMAL PARAMETER SENSITIVITY & VOLTAGE SAG BENCHMARK")
@@ -117,6 +136,13 @@ def main() -> None:
         f"NMC CC/EKF/UKF = {est_metrics['nmc_rmse_cc_pct']:.1f}%/"
         f"{est_metrics['nmc_rmse_ekf_pct']:.2f}%/{est_metrics['nmc_rmse_ukf_pct']:.2f}% | "
         f"LFP EKF/UKF = {est_metrics['lfp_rmse_ekf_pct']:.2f}%/{est_metrics['lfp_rmse_ukf_pct']:.2f}%"
+    )
+    print(
+        f"2-Node Thermal & SOP BMS: "
+        f"Peak ΔT_core-surf = {sop_metrics['peak_core_surf_delta_c']:.2f} °C | "
+        f"2C CC→CV (NMC/LFP) = {sop_metrics['nmc_cc_to_cv_min']:.1f}/"
+        f"{sop_metrics['lfp_cc_to_cv_min']:.1f} min | "
+        f"30s Peak P_dis = {sop_metrics['sop_30s_peak_dis_w']:.1f} W"
     )
     print("-" * 75)
     print(f"{'Ambient (°C)':<15}{'C-Rate':<12}{'Min V_term (V)':<18}{'Peak Temp (°C)':<18}")
