@@ -2,6 +2,7 @@ import numpy as np
 
 from src.bess_model import LiIonBatteryModel
 from src.bms_thermal_sop import run_thermal_sop_benchmark
+from src.degradation_model import run_degradation_benchmark
 from src.ecm_2rc import run_chemistry_comparison_benchmark
 from src.profile_generator import LoadProfileGenerator
 from src.sensitivity_analysis import run_thermal_sensitivity_sweep
@@ -10,6 +11,7 @@ from src.thermal_model import ThermalBESSModel
 from src.visualizer import (
     plot_bess_response,
     plot_chemistry_2rc_comparison,
+    plot_degradation_benchmark,
     plot_soc_estimation_benchmark,
     plot_thermal_sop_derating,
 )
@@ -109,11 +111,29 @@ def generate_thermal_sop_figure(
     }
 
 
+def generate_degradation_figure(
+    save_path: str = "results/degradation_rainflow_aging.png",
+) -> dict[str, float]:
+    """Run the ASTM E1049-85 rainflow & SEI/cycle/plating aging benchmark and export Figure 5."""
+    bench = run_degradation_benchmark()
+    plot_degradation_benchmark(bench, save_path=save_path)
+    return {
+        "nmc_arb_eol_yr": bench.nmc_arb.eol_years,
+        "nmc_arb_eol_efc": bench.nmc_arb.eol_efc,
+        "nmc_regd_12yr_soh_pct": float(bench.nmc_regd.soh_pct[-1]),
+        "lfp_arb_eol_yr": bench.lfp_arb.eol_years,
+        "lfp_arb_eol_efc": bench.lfp_arb.eol_efc,
+        "lfp_regd_12yr_soh_pct": float(bench.lfp_regd.soh_pct[-1]),
+        "optimal_temp_nmc_c": bench.optimal_temp_nmc_c,
+    }
+
+
 def main() -> None:
     ref_metrics = generate_reference_dynamic_figure()
     chem_metrics = generate_chemistry_comparison_figure()
     est_metrics = generate_soc_estimation_figure()
     sop_metrics = generate_thermal_sop_figure()
+    deg_metrics = generate_degradation_figure()
 
     print("=" * 75)
     print("BESS ELECTRO-THERMAL PARAMETER SENSITIVITY & VOLTAGE SAG BENCHMARK")
@@ -143,6 +163,12 @@ def main() -> None:
         f"2C CC→CV (NMC/LFP) = {sop_metrics['nmc_cc_to_cv_min']:.1f}/"
         f"{sop_metrics['lfp_cc_to_cv_min']:.1f} min | "
         f"30s Peak P_dis = {sop_metrics['sop_30s_peak_dis_w']:.1f} W"
+    )
+    print(
+        f"Rainflow & SEI Aging (12 yr): "
+        f"Arb EoL (NMC/LFP) = {deg_metrics['nmc_arb_eol_yr']:.1f}/{deg_metrics['lfp_arb_eol_yr']:.1f} yr | "
+        f"RegD 12yr SoH (NMC/LFP) = {deg_metrics['nmc_regd_12yr_soh_pct']:.1f}%/"
+        f"{deg_metrics['lfp_regd_12yr_soh_pct']:.1f}%"
     )
     print("-" * 75)
     print(f"{'Ambient (°C)':<15}{'C-Rate':<12}{'Min V_term (V)':<18}{'Peak Temp (°C)':<18}")
