@@ -19,6 +19,7 @@ Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (E
 | `src/soc_estimators.py` | `CoulombCountingEstimator`, `ExtendedKalmanFilterEstimator` (analytical Jacobians + Joseph update), `UnscentedKalmanFilterEstimator` (7-sigma-point UT + NIS gating) |
 | `src/bms_thermal_sop.py` | `TwoNodeThermalNetwork` (exact $2 \times 2$ Putzer matrix exponential), `CoupledTwoNodeBESS`, `simulate_cc_cv_charge`, `compute_sop_limits` |
 | `src/degradation_model.py` | `extract_rainflow_cycles` (ASTM E1049-85 4-point stack), `SemiEmpiricalAgingModel` (virtual-age SEI + Wöhler DoD + Waldmann plating), `simulate_grid_duty_aging` |
+| `src/cli.py` / `pyproject.toml` | PEP 621 + PEP 561 typed package (`bess_solver`) & 7-subcommand `bess-sim` CLI (`info`, `pulse`, `ecm`, `estimate`, `sop`, `degrade`, `sweep`) |
 | `src/thermal_model.py` | `ThermalBESSModel`, `arrhenius_factor`, shared reference constants and temperature envelope |
 | `src/sensitivity_analysis.py` | `run_thermal_sensitivity_sweep`, `SimulationError` |
 | `src/profile_generator.py` | Pulsed and deterministic grid load profiles |
@@ -210,6 +211,25 @@ $$u_{cal}^{(n+1)} = u_{cal}^{(n)} + k_{cal}(\bar{s}_n, T_{core,n})^{1/z_{cal}}\,
 - **Waldmann two-Arrhenius plating + SEI crossover (`Waldmann et al., J. Power Sources 262, 129–135, 2014`):** Captures anodic lithium-plating acceleration at cold temperatures alongside high-temperature Arrhenius SEI growth, identifying an interior aging minimum near **`20 °C` (`7.9%` fade after `500 EFC` at `1C`)**.
 
 ![ASTM E1049-85 Rainflow Decomposition, 12-Year SoH Retention, Waldmann V-Curve, and Resistance Growth](results/degradation_rainflow_aging.png)
+
+## PEP 621 Package Installation & `bess-sim` CLI (`Module 6`)
+
+The repository installs cleanly as the PEP 561 typed **`bess_solver`** Python package (without polluting `site-packages/src`) and registers the **`bess-sim`** command-line interface:
+
+```bash
+python -m pip install --upgrade pip "setuptools>=77.0" wheel
+pip install --no-build-isolation -e ".[dev]"
+```
+
+| Subcommand | Example Invocation | Purpose |
+| :--- | :--- | :--- |
+| `info` | `bess-sim info --json` | Package version (`0.7.0`), cell chemistry specs (`NMC811`, `LFP`) & aging parameters |
+| `pulse` | `bess-sim pulse --c-rate 3.0 --temp-c 25 --json` | 1RC electro-thermal pulsed discharge trajectory & optional Figure 1 export |
+| `ecm` | `bess-sim ecm --chemistry both --soc 0.50 --json` | 2RC polarization impedances, OCV/entropic coefficients & EIS Nyquist metrics |
+| `estimate` | `bess-sim estimate --chemistry both --json` | Closed-loop Coulomb counting vs. `EKF` & `UKF` SoC estimation benchmark |
+| `sop` | `bess-sim sop --chemistry nmc811 --temp-c -5 --json` | 2-node thermal & receding-horizon `SOP` power limits (`2s / 10s / 30s`) |
+| `degrade` | `bess-sim degrade --chemistry lfp --mode deep_arbitrage --json` | ASTM E1049-85 rainflow + virtual-age SEI/cycle/plating lifetime projection |
+| `sweep` | `bess-sim sweep --temps-c 10,25,40,50 --c-rates 1,2,3,4` | Multi-temperature $\times$ C-rate voltage-sag & peak-temperature matrix |
 
 ## Citation
 

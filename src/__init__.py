@@ -1,7 +1,7 @@
-"""Battery Energy Storage System (BESS) Electro-Thermal & SoC Dynamics Solver."""
+"""Battery Energy Storage System (BESS) Electro-Thermal, BMS & Degradation Solver."""
 
-from src.bess_model import SOC_TOL, LiIonBatteryModel
-from src.bms_thermal_sop import (
+from .bess_model import SOC_TOL, LiIonBatteryModel
+from .bms_thermal_sop import (
     CCCVChargeResult,
     CoupledTwoNodeBESS,
     CoupledTwoNodeState,
@@ -17,7 +17,7 @@ from src.bms_thermal_sop import (
     run_thermal_sop_benchmark,
     simulate_cc_cv_charge,
 )
-from src.cell_chemistry import (
+from .cell_chemistry import (
     LFP_A123_ANR26650_2P3AH,
     NMC811_LG_M50_5AH,
     ChemistrySpec,
@@ -25,7 +25,9 @@ from src.cell_chemistry import (
     get_chemistry_spec,
     list_chemistry_specs,
 )
-from src.degradation_model import (
+from .cli import build_parser
+from .cli import main as cli_main
+from .degradation_model import (
     LFP_AGING_SPEC,
     NMC811_AGING_SPEC,
     AgingState,
@@ -45,7 +47,7 @@ from src.degradation_model import (
     simulate_duty_cycle_block,
     simulate_grid_duty_aging,
 )
-from src.ecm_2rc import (
+from .ecm_2rc import (
     ChemistryComparisonResult,
     EISResult,
     HPPCBenchmarkResult,
@@ -55,9 +57,9 @@ from src.ecm_2rc import (
     compute_eis_nyquist,
     run_chemistry_comparison_benchmark,
 )
-from src.profile_generator import LoadProfileGenerator
-from src.sensitivity_analysis import SimulationError, run_thermal_sensitivity_sweep
-from src.soc_estimators import (
+from .profile_generator import LoadProfileGenerator
+from .sensitivity_analysis import SimulationError, run_thermal_sensitivity_sweep
+from .soc_estimators import (
     ChemistryEstimationRun,
     CoulombCountingEstimator,
     EstimatorStepResult,
@@ -67,7 +69,7 @@ from src.soc_estimators import (
     run_single_chemistry_estimation,
     run_soc_estimation_benchmark,
 )
-from src.thermal_model import (
+from .thermal_model import (
     EA_J_MOL,
     R_GAS,
     T_MAX_K,
@@ -77,7 +79,7 @@ from src.thermal_model import (
     arrhenius_factor,
     check_temperature_k,
 )
-from src.visualizer import (
+from .visualizer import (
     plot_bess_response,
     plot_chemistry_2rc_comparison,
     plot_degradation_benchmark,
@@ -85,7 +87,7 @@ from src.visualizer import (
     plot_thermal_sop_derating,
 )
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 __all__ = [
     "__version__",
@@ -138,7 +140,9 @@ __all__ = [
     "TwoRCStepResult",
     "UnscentedKalmanFilterEstimator",
     "arrhenius_factor",
+    "build_parser",
     "check_temperature_k",
+    "cli_main",
     "compute_eis_nyquist",
     "compute_sop_limits",
     "extract_rainflow_cycles",

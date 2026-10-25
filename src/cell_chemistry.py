@@ -24,7 +24,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from src.thermal_model import EA_J_MOL, T_REF_K, check_temperature_k
+from .thermal_model import EA_J_MOL, T_REF_K, check_temperature_k
 
 __all__ = [
     "ChemistrySpec",

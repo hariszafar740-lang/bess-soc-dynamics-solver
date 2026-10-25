@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=77.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bess-soc-dynamics-solver"
+version = "0.7.0"
+description = "Physics-grounded lithium-ion BESS 1RC/2RC electro-thermal, EKF/UKF SoC, 2-node SOP & ASTM E1049-85 degradation solver."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Haris Zafar" },
+]
+keywords = [
+  "battery-energy-storage",
+  "lithium-ion",
+  "equivalent-circuit-model",
+  "kalman-filter",
+  "state-of-charge",
+  "state-of-power",
+  "rainflow-counting",
+  "battery-degradation",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering",
+  "Typing :: Typed",
+]
+dependencies = [
+  "numpy>=1.24,<3",
+  "matplotlib>=3.7,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4,<10",
+  "ruff>=0.5,<1",
+  "build>=1.0",
+]
+validation = [
+  "pybamm>=24.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/hariszafar740-lang/bess-soc-dynamics-solver"
+Repository = "https://github.com/hariszafar740-lang/bess-soc-dynamics-solver"
+Issues = "https://github.com/hariszafar740-lang/bess-soc-dynamics-solver/issues"
+
+[project.scripts]
+bess-sim = "bess_solver.cli:main"
+
+[tool.setuptools]
+packages = ["bess_solver"]
+package-dir = { bess_solver = "src" }
+include-package-data = true
+
+[tool.setuptools.package-data]
+bess_solver = ["py.typed"]

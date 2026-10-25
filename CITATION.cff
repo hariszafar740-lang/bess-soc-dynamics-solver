@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 title: "Battery Energy Storage System (BESS) Electro-Thermal & SoC Dynamics Solver"
-message: "If you use this battery equivalent-circuit or electro-thermal solver in academic, research, or engineering work, please cite it using the metadata below."
+message: "If you use this battery equivalent-circuit, state-estimation, BMS SOP, or degradation solver in academic, research, or engineering work, please cite it using the metadata below."
 type: software
 authors:
   - given-names: Haris
@@ -8,17 +8,22 @@ authors:
     alias: hariszafar740-lang
 repository-code: "https://github.com/hariszafar740-lang/bess-soc-dynamics-solver"
 abstract: >-
-  Reduced-order electro-thermal simulation engine for lithium-ion battery
-  energy storage cells, featuring unconditionally stable exact exponential
-  integration of RC polarization and lumped Joule heat balance, reference-anchored
-  Arrhenius resistance scaling, Coulomb-counted SoC, and closed-form verification.
+  Installable Python simulation engine (bess_solver / bess-sim) for lithium-ion
+  battery energy storage cells, combining 1RC and chemistry-parameterized 2RC
+  equivalent-circuit dynamics (NMC811 & LFP), monotone PCHIP open-circuit
+  potentials, Plett hysteresis, Bernardi reversible/irreversible heat, EIS
+  Nyquist synthesis, closed-loop EKF/UKF SoC estimators, 2-node radial thermal
+  & receding-horizon SOP BMS derating, and ASTM E1049-85 rainflow + virtual-age
+  SEI/cycle/plating lifetime degradation.
 keywords:
   - battery-energy-storage
   - lithium-ion
   - equivalent-circuit-model
-  - electro-thermal
+  - kalman-filter
   - state-of-charge
-  - python
+  - state-of-power
+  - rainflow-counting
+  - battery-degradation
 license: MIT
-version: 0.2.0
-date-released: "2026-10-24"
+version: 0.7.0
+date-released: "2026-10-25"
