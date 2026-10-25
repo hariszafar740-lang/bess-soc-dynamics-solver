@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Domain](https://img.shields.io/badge/Focus-Grid%20Storage%20%26%20Electrochemical%20Modeling-green)
 
-Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (ECM)**, a **chemistry-parameterized 2RC dual-polarization ECM (`NMC811` & `LFP`)** with **monotone PCHIP open-circuit potential splines**, **Plett one-state voltage hysteresis**, **Bernardi reversible + irreversible heat balances**, **EIS Nyquist synthesis**, **closed-loop `EKF` / `UKF` `SoC` estimators**, and a **2-node radial core–surface thermal network with zero-overshoot `CC-CV` charging & receding-horizon State-of-Power (`SOP`) BMS derating**.
+Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (ECM)**, a **chemistry-parameterized 2RC dual-polarization ECM (`NMC811` & `LFP`)** with **monotone PCHIP open-circuit potential splines**, **Plett one-state voltage hysteresis**, **Bernardi reversible + irreversible heat balances**, **EIS Nyquist synthesis**, **closed-loop `EKF` / `UKF` `SoC` estimators**, **2-node radial core–surface thermal & `SOP` BMS derating**, and **ASTM E1049-85 rainflow + semi-empirical SEI/plating lifetime degradation**.
 
 > **Scope and validation status.** Equilibrium open-circuit voltage (`OCV`) and entropic (`dU/dT`) lookup tables in `src/cell_chemistry.py` are extracted at 1% SoC resolution from published electrode parameterizations in `PyBaMM 26.10.1.1` (`O'Regan et al., 2022` for LG M50 NMC811; `Prada et al., 2013` for A123 26650 LFP) and verified in CI (`tests/test_pybamm_crosscheck.py`). Dynamic 2RC resistances, capacitances, hysteresis scales, and lumped convective coefficients remain representative single-cell engineering values rather than pack-level or safety-certified manufacturer specifications.
 
@@ -18,6 +18,7 @@ Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (E
 | `src/ecm_2rc.py` | `TwoRCBatteryModel` – exact 2RC integration, Plett hysteresis, First-Law Bernardi heat balance, `compute_eis_nyquist` |
 | `src/soc_estimators.py` | `CoulombCountingEstimator`, `ExtendedKalmanFilterEstimator` (analytical Jacobians + Joseph update), `UnscentedKalmanFilterEstimator` (7-sigma-point UT + NIS gating) |
 | `src/bms_thermal_sop.py` | `TwoNodeThermalNetwork` (exact $2 \times 2$ Putzer matrix exponential), `CoupledTwoNodeBESS`, `simulate_cc_cv_charge`, `compute_sop_limits` |
+| `src/degradation_model.py` | `extract_rainflow_cycles` (ASTM E1049-85 4-point stack), `SemiEmpiricalAgingModel` (virtual-age SEI + Wöhler DoD + Waldmann plating), `simulate_grid_duty_aging` |
 | `src/thermal_model.py` | `ThermalBESSModel`, `arrhenius_factor`, shared reference constants and temperature envelope |
 | `src/sensitivity_analysis.py` | `run_thermal_sensitivity_sweep`, `SimulationError` |
 | `src/profile_generator.py` | Pulsed and deterministic grid load profiles |
@@ -197,6 +198,18 @@ $$C_{core}\,\frac{dT_{core}}{dt} = Q_{irrev} + Q_{rev} - \frac{T_{core} - T_{sur
 - **Multi-constraint receding-horizon State-of-Power (`compute_sop_limits`):** Computes horizon-sustained $(P_{dis,max}, P_{chg,max})$ across `10 s / 30 s / 120 s` windows subject to simultaneous hardware current, SoC window, $V_{min}/V_{max}$, sub-zero lithium-plating taper ($T \le 0\,^\circ\text{C}$ lockout), and $T_{core} \le 48\,^\circ\text{C}$ derating, reporting the active bottleneck (`"voltage"`, `"soc"`, `"current"`, or `"thermal_core"`).
 
 ![2-Node Radial Thermal Divergence, CC-CV Fast-Charge Taper, and Horizon SOP BMS Derating](results/thermal_sop_derating.png)
+
+## ASTM E1049-85 Rainflow Cycle Counting & Coupled SEI / Plating Degradation (`Module 5`)
+
+`src/degradation_model.py` couples exact time-domain rainflow cycle decomposition with path-consistent virtual-age degradation states (`NMC811_AGING_SPEC` & `LFP_AGING_SPEC`):
+
+$$u_{cal}^{(n+1)} = u_{cal}^{(n)} + k_{cal}(\bar{s}_n, T_{core,n})^{1/z_{cal}}\,\Delta t_d, \qquad u_{cyc}^{(n+1)} = u_{cyc}^{(n)} + \sum_{i \in \mathcal{C}} \left[s_{SEI,i} + s_{plat,i}\right]^{1/z_{cyc}}(c_i\,\text{DoD}_i)$$
+
+- **ASTM E1049-85 4-point rainflow extractor (`extract_rainflow_cycles`):** Resolves nested hysteresis loops in non-monotonic grid signals (e.g., `PJM RegD` AGC superimposed on energy-recovery swings) into closed full cycles ($c_i = 1.0$) and residual stack half-cycles ($c_i = 0.5$), conserving exact SoC path length $\sum_i 2\,c_i\,\text{DoD}_i = \sum_k |\Delta \text{SoC}_k|$ to machine precision (`~1e-14`).
+- **Matched-throughput `RegD` vs. `Deep Arbitrage` 12-year projection (`~307 EFC/yr`):** Under daily `80% DoD` arbitrage, `NMC811` reaches `80% SoH` End-of-Life (`EoL`) at **`4.1 yr` (`1,255 EFC`)** vs. **`11.0 yr` (`3,366 EFC`)** for zero-strain olivine `LFP`. Under shallow `PJM RegD` micro-cycling at identical annual throughput, nonlinear Wöhler DoD scaling ($\beta_{dod} = 1.68$) keeps `NMC811` at **`80.9% SoH`** and `LFP` at **`87.7% SoH`** after 12 years.
+- **Waldmann two-Arrhenius plating + SEI crossover (`Waldmann et al., J. Power Sources 262, 129–135, 2014`):** Captures anodic lithium-plating acceleration at cold temperatures alongside high-temperature Arrhenius SEI growth, identifying an interior aging minimum near **`20 °C` (`7.9%` fade after `500 EFC` at `1C`)**.
+
+![ASTM E1049-85 Rainflow Decomposition, 12-Year SoH Retention, Waldmann V-Curve, and Resistance Growth](results/degradation_rainflow_aging.png)
 
 ## Citation
 
