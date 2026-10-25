@@ -33,15 +33,15 @@ from typing import Literal
 
 import numpy as np
 
-from src.bess_model import SOC_TOL
-from src.cell_chemistry import (
+from .bess_model import SOC_TOL
+from .cell_chemistry import (
     LFP_A123_ANR26650_2P3AH,
     NMC811_LG_M50_5AH,
     ChemistrySpec,
     get_chemistry_spec,
 )
-from src.ecm_2rc import TwoRCBatteryModel, TwoRCState, _phi1
-from src.thermal_model import T_MAX_K, check_temperature_k
+from .ecm_2rc import TwoRCBatteryModel, TwoRCState, _phi1
+from .thermal_model import T_MAX_K, check_temperature_k
 
 __all__ = [
     "CCCVChargeResult",

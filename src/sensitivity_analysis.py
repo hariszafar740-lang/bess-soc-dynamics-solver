@@ -1,8 +1,8 @@
 import math
 
-from src.bess_model import LiIonBatteryModel
-from src.profile_generator import LoadProfileGenerator
-from src.thermal_model import T_MAX_K, T_MIN_K, ThermalBESSModel
+from .bess_model import LiIonBatteryModel
+from .profile_generator import LoadProfileGenerator
+from .thermal_model import T_MAX_K, T_MIN_K, ThermalBESSModel
 
 
 class SimulationError(RuntimeError):
