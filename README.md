@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Domain](https://img.shields.io/badge/Focus-Grid%20Storage%20%26%20Electrochemical%20Modeling-green)
 
-Python engine implementing both a baseline **1RC Thevenin Equivalent Circuit Model (ECM)** and a **chemistry-parameterized 2RC dual-polarization ECM (`NMC811` & `LFP`)** with **monotone PCHIP open-circuit potential splines**, **Plett one-state voltage hysteresis**, **Bernardi reversible entropic + irreversible Joule/polarization heat balances**, **Electrochemical Impedance Spectroscopy (`EIS`) Nyquist synthesis**, and **Arrhenius sensitivity sweeps**.
+Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (ECM)**, a **chemistry-parameterized 2RC dual-polarization ECM (`NMC811` & `LFP`)** with **monotone PCHIP open-circuit potential splines**, **Plett one-state voltage hysteresis**, **Bernardi reversible + irreversible heat balances**, **EIS Nyquist synthesis**, and **closed-loop Extended & Unscented Kalman Filter (`EKF` / `UKF`) State-of-Charge (`SoC`) estimators**.
 
 > **Scope and validation status.** Equilibrium open-circuit voltage (`OCV`) and entropic (`dU/dT`) lookup tables in `src/cell_chemistry.py` are extracted at 1% SoC resolution from published electrode parameterizations in `PyBaMM 26.10.1.1` (`O'Regan et al., 2022` for LG M50 NMC811; `Prada et al., 2013` for A123 26650 LFP) and verified in CI (`tests/test_pybamm_crosscheck.py`). Dynamic 2RC resistances, capacitances, hysteresis scales, and lumped convective coefficients remain representative single-cell engineering values rather than pack-level or safety-certified manufacturer specifications.
 
@@ -16,6 +16,7 @@ Python engine implementing both a baseline **1RC Thevenin Equivalent Circuit Mod
 | `src/bess_model.py` | `LiIonBatteryModel` – baseline 1RC ECM, OCV polynomial, Coulomb counting, Arrhenius scaling |
 | `src/cell_chemistry.py` | `ChemistrySpec`, `MonotonePCHIP`, SHA-256-pinned `NMC811_LG_M50_5AH` (`ORegan2022`) & `LFP_A123_ANR26650_2P3AH` (`Prada2013`) records |
 | `src/ecm_2rc.py` | `TwoRCBatteryModel` – exact 2RC integration, Plett hysteresis, First-Law Bernardi heat balance, `compute_eis_nyquist` |
+| `src/soc_estimators.py` | `CoulombCountingEstimator`, `ExtendedKalmanFilterEstimator` (analytical Jacobians + Joseph update), `UnscentedKalmanFilterEstimator` (7-sigma-point UT + NIS gating) |
 | `src/thermal_model.py` | `ThermalBESSModel`, `arrhenius_factor`, shared reference constants and temperature envelope |
 | `src/sensitivity_analysis.py` | `run_thermal_sensitivity_sweep`, `SimulationError` |
 | `src/profile_generator.py` | Pulsed and deterministic grid load profiles |
@@ -168,6 +169,21 @@ $$m\,c_p\frac{dT_{cell}}{dt} = \underbrace{I^2 R_0 + \frac{1}{\Delta t}\sum_{k=1
 - **Independent `PyBaMM` cross-validation:** `tests/test_pybamm_crosscheck.py` (`pip install -r requirements-validation.txt`) verifies both 101-point stoichiometric tables against `pybamm==26.10.1.1` to $< 5\,\mu\text{V}$ and dynamic 2RC `Thevenin` voltage/temperature trajectories to $< 0.4\text{ mV}$ and $< 2\text{ mK}$.
 
 ![2RC Multi-Chemistry, Hysteresis, Bernardi Heat & EIS Comparison](results/chemistry_2rc_comparison.png)
+
+## Closed-Loop Nonlinear SoC Estimation: EKF & UKF vs. Coulomb Counting (`Module 3`)
+
+`src/soc_estimators.py` estimates $x_k = [\widehat{SoC}_k,\; \widehat{V}_{rc,1,k},\; \widehat{V}_{rc,2,k}]^\top$ from noisy, bias-corrupted current ($I_{meas,k} = I_k + b_I + w_{I,k}$) and terminal-voltage ($V_{meas,k} = V_{term,k} + v_k$) measurements:
+
+- **`ExtendedKalmanFilterEstimator` (`EKF`):** Uses the exact $3 \times 3$ state Jacobian $F_k = \partial f/\partial x$ (including off-diagonal low-SoC impedance $\partial V_{rc,m}^+/\partial SoC$ chain-rule terms), analytical PCHIP measurement Jacobian $H_k = [\partial U_{ocv}/\partial SoC - I\,\partial R_0/\partial SoC,\; -1,\; -1]$, symmetrized Bucy–Joseph covariance updates, and optional Normalized Innovation Squared (`NIS`) outlier gating (`innovation_gate_nis`).
+- **`UnscentedKalmanFilterEstimator` (`UKF`):** Propagates $2n + 1 = 7$ scaled Unscented Transform sigma points directly through the nonlinear 2RC transition and PCHIP + hysteresis terminal-voltage map without local Jacobian linearization.
+- **Physical input-noise scaling & electrochemical observability (`3600 s`, `-23%` initial SoC offset, `+0.05C` Hall-sensor current drift bias, `8 mV` voltage noise):**
+
+| Chemistry | OCV Mid-SoC Slope $\partial U_{ocv}/\partial SoC$ | Coulomb Counting RMSE | EKF Full RMSE | UKF Full RMSE | Final Closed-Loop Error |
+|---|---|---|---|---|---|
+| `NMC811_LG_M50_5AH` | $650\text{–}1700\text{ mV/SoC}$ | `25.4%` (`-26.6%` end) | `1.26%` | `1.28%` | `+1.33%` |
+| `LFP_A123_ANR26650_2P3AH` | $16\text{–}40\text{ mV/SoC}$ (plateau) | `25.4%` (`-26.6%` end) | `7.19%` | `6.69%` | `+1.55%` (post-knee lock) |
+
+![Closed-Loop EKF and UKF vs Coulomb Counting SoC Estimation Benchmark](results/soc_ekf_ukf_benchmark.png)
 
 ## Citation
 

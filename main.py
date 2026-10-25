@@ -4,8 +4,13 @@ from src.bess_model import LiIonBatteryModel
 from src.ecm_2rc import run_chemistry_comparison_benchmark
 from src.profile_generator import LoadProfileGenerator
 from src.sensitivity_analysis import run_thermal_sensitivity_sweep
+from src.soc_estimators import run_soc_estimation_benchmark
 from src.thermal_model import ThermalBESSModel
-from src.visualizer import plot_bess_response, plot_chemistry_2rc_comparison
+from src.visualizer import (
+    plot_bess_response,
+    plot_chemistry_2rc_comparison,
+    plot_soc_estimation_benchmark,
+)
 
 
 def generate_reference_dynamic_figure(save_path: str = "results/bess_dynamic_response.png") -> dict[str, float]:
@@ -70,9 +75,26 @@ def generate_chemistry_comparison_figure(
     }
 
 
+def generate_soc_estimation_figure(
+    save_path: str = "results/soc_ekf_ukf_benchmark.png",
+) -> dict[str, float]:
+    """Run the closed-loop EKF & UKF vs. Coulomb counting SoC benchmark and export Figure 3."""
+    bench = run_soc_estimation_benchmark(dt=1.0)
+    plot_soc_estimation_benchmark(bench, save_path=save_path)
+    return {
+        "nmc_rmse_cc_pct": bench.nmc.rmse_cc_full * 100.0,
+        "nmc_rmse_ekf_pct": bench.nmc.rmse_ekf_full * 100.0,
+        "nmc_rmse_ukf_pct": bench.nmc.rmse_ukf_full * 100.0,
+        "lfp_rmse_cc_pct": bench.lfp.rmse_cc_full * 100.0,
+        "lfp_rmse_ekf_pct": bench.lfp.rmse_ekf_full * 100.0,
+        "lfp_rmse_ukf_pct": bench.lfp.rmse_ukf_full * 100.0,
+    }
+
+
 def main() -> None:
     ref_metrics = generate_reference_dynamic_figure()
     chem_metrics = generate_chemistry_comparison_figure()
+    est_metrics = generate_soc_estimation_figure()
 
     print("=" * 75)
     print("BESS ELECTRO-THERMAL PARAMETER SENSITIVITY & VOLTAGE SAG BENCHMARK")
@@ -89,6 +111,12 @@ def main() -> None:
         f"{chem_metrics['nmc_rdc_10c_mohm']:.1f} mΩ | "
         f"1C Q_rev = [{chem_metrics['nmc_1c_min_q_rev_w']:.2f}, "
         f"+{chem_metrics['nmc_1c_max_q_rev_w']:.2f}] W"
+    )
+    print(
+        f"Closed-Loop SoC RMSE (-23% Init, +0.05C Bias): "
+        f"NMC CC/EKF/UKF = {est_metrics['nmc_rmse_cc_pct']:.1f}%/"
+        f"{est_metrics['nmc_rmse_ekf_pct']:.2f}%/{est_metrics['nmc_rmse_ukf_pct']:.2f}% | "
+        f"LFP EKF/UKF = {est_metrics['lfp_rmse_ekf_pct']:.2f}%/{est_metrics['lfp_rmse_ukf_pct']:.2f}%"
     )
     print("-" * 75)
     print(f"{'Ambient (°C)':<15}{'C-Rate':<12}{'Min V_term (V)':<18}{'Peak Temp (°C)':<18}")
