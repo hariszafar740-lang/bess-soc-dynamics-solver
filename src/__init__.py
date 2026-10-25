@@ -1,6 +1,22 @@
 """Battery Energy Storage System (BESS) Electro-Thermal & SoC Dynamics Solver."""
 
 from src.bess_model import SOC_TOL, LiIonBatteryModel
+from src.bms_thermal_sop import (
+    CCCVChargeResult,
+    CoupledTwoNodeBESS,
+    CoupledTwoNodeState,
+    CoupledTwoNodeStepResult,
+    SOPBottleneck,
+    SOPResult,
+    ThermalPulseRun,
+    ThermalSOPBenchmarkResult,
+    TwoNodeThermalNetwork,
+    TwoNodeThermalState,
+    TwoNodeThermalStepResult,
+    compute_sop_limits,
+    run_thermal_sop_benchmark,
+    simulate_cc_cv_charge,
+)
 from src.cell_chemistry import (
     LFP_A123_ANR26650_2P3AH,
     NMC811_LG_M50_5AH,
@@ -45,16 +61,21 @@ from src.visualizer import (
     plot_bess_response,
     plot_chemistry_2rc_comparison,
     plot_soc_estimation_benchmark,
+    plot_thermal_sop_derating,
 )
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 __all__ = [
     "__version__",
+    "CCCVChargeResult",
     "ChemistryComparisonResult",
     "ChemistryEstimationRun",
     "ChemistrySpec",
     "CoulombCountingEstimator",
+    "CoupledTwoNodeBESS",
+    "CoupledTwoNodeState",
+    "CoupledTwoNodeStepResult",
     "EA_J_MOL",
     "EISResult",
     "EstimatorStepResult",
@@ -67,12 +88,19 @@ __all__ = [
     "NMC811_LG_M50_5AH",
     "R_GAS",
     "SOC_TOL",
+    "SOPBottleneck",
+    "SOPResult",
     "SimulationError",
     "SoCEstimationBenchmarkResult",
     "T_MAX_K",
     "T_MIN_K",
     "T_REF_K",
     "ThermalBESSModel",
+    "ThermalPulseRun",
+    "ThermalSOPBenchmarkResult",
+    "TwoNodeThermalNetwork",
+    "TwoNodeThermalState",
+    "TwoNodeThermalStepResult",
     "TwoRCBatteryModel",
     "TwoRCState",
     "TwoRCStepResult",
@@ -80,13 +108,17 @@ __all__ = [
     "arrhenius_factor",
     "check_temperature_k",
     "compute_eis_nyquist",
+    "compute_sop_limits",
     "get_chemistry_spec",
     "list_chemistry_specs",
     "plot_bess_response",
     "plot_chemistry_2rc_comparison",
     "plot_soc_estimation_benchmark",
+    "plot_thermal_sop_derating",
     "run_chemistry_comparison_benchmark",
     "run_single_chemistry_estimation",
     "run_soc_estimation_benchmark",
     "run_thermal_sensitivity_sweep",
+    "run_thermal_sop_benchmark",
+    "simulate_cc_cv_charge",
 ]

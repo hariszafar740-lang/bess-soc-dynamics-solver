@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Domain](https://img.shields.io/badge/Focus-Grid%20Storage%20%26%20Electrochemical%20Modeling-green)
 
-Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (ECM)**, a **chemistry-parameterized 2RC dual-polarization ECM (`NMC811` & `LFP`)** with **monotone PCHIP open-circuit potential splines**, **Plett one-state voltage hysteresis**, **Bernardi reversible + irreversible heat balances**, **EIS Nyquist synthesis**, and **closed-loop Extended & Unscented Kalman Filter (`EKF` / `UKF`) State-of-Charge (`SoC`) estimators**.
+Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (ECM)**, a **chemistry-parameterized 2RC dual-polarization ECM (`NMC811` & `LFP`)** with **monotone PCHIP open-circuit potential splines**, **Plett one-state voltage hysteresis**, **Bernardi reversible + irreversible heat balances**, **EIS Nyquist synthesis**, **closed-loop `EKF` / `UKF` `SoC` estimators**, and a **2-node radial core–surface thermal network with zero-overshoot `CC-CV` charging & receding-horizon State-of-Power (`SOP`) BMS derating**.
 
 > **Scope and validation status.** Equilibrium open-circuit voltage (`OCV`) and entropic (`dU/dT`) lookup tables in `src/cell_chemistry.py` are extracted at 1% SoC resolution from published electrode parameterizations in `PyBaMM 26.10.1.1` (`O'Regan et al., 2022` for LG M50 NMC811; `Prada et al., 2013` for A123 26650 LFP) and verified in CI (`tests/test_pybamm_crosscheck.py`). Dynamic 2RC resistances, capacitances, hysteresis scales, and lumped convective coefficients remain representative single-cell engineering values rather than pack-level or safety-certified manufacturer specifications.
 
@@ -17,6 +17,7 @@ Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (E
 | `src/cell_chemistry.py` | `ChemistrySpec`, `MonotonePCHIP`, SHA-256-pinned `NMC811_LG_M50_5AH` (`ORegan2022`) & `LFP_A123_ANR26650_2P3AH` (`Prada2013`) records |
 | `src/ecm_2rc.py` | `TwoRCBatteryModel` – exact 2RC integration, Plett hysteresis, First-Law Bernardi heat balance, `compute_eis_nyquist` |
 | `src/soc_estimators.py` | `CoulombCountingEstimator`, `ExtendedKalmanFilterEstimator` (analytical Jacobians + Joseph update), `UnscentedKalmanFilterEstimator` (7-sigma-point UT + NIS gating) |
+| `src/bms_thermal_sop.py` | `TwoNodeThermalNetwork` (exact $2 \times 2$ Putzer matrix exponential), `CoupledTwoNodeBESS`, `simulate_cc_cv_charge`, `compute_sop_limits` |
 | `src/thermal_model.py` | `ThermalBESSModel`, `arrhenius_factor`, shared reference constants and temperature envelope |
 | `src/sensitivity_analysis.py` | `run_thermal_sensitivity_sweep`, `SimulationError` |
 | `src/profile_generator.py` | Pulsed and deterministic grid load profiles |
@@ -184,6 +185,18 @@ $$m\,c_p\frac{dT_{cell}}{dt} = \underbrace{I^2 R_0 + \frac{1}{\Delta t}\sum_{k=1
 | `LFP_A123_ANR26650_2P3AH` | $16\text{–}40\text{ mV/SoC}$ (plateau) | `25.4%` (`-26.6%` end) | `7.19%` | `6.69%` | `+1.55%` (post-knee lock) |
 
 ![Closed-Loop EKF and UKF vs Coulomb Counting SoC Estimation Benchmark](results/soc_ekf_ukf_benchmark.png)
+
+## Coupled 2-Node Radial Thermal Network, CC-CV Taper & Horizon SOP Derating (`Module 4`)
+
+`src/bms_thermal_sop.py` resolves internal radial temperature gradients between the electrochemically active jelly-roll core ($T_{core}$) and casing surface ($T_{surf}$) (Forgez et al., *J. Power Sources* 195(9), 2961–2968, 2010):
+
+$$C_{core}\,\frac{dT_{core}}{dt} = Q_{irrev} + Q_{rev} - \frac{T_{core} - T_{surf}}{R_{cs}}, \qquad C_{surf}\,\frac{dT_{surf}}{dt} = \frac{T_{core} - T_{surf}}{R_{cs}} - h_{sa}\,(T_{surf} - T_{amb})$$
+
+- **Exact $2 \times 2$ Putzer matrix-exponential integration (`TwoNodeThermalNetwork`):** Solves $\theta(t + \Delta t) = e^{A\Delta t}\theta(t) + \left(\int_0^{\Delta t} e^{As}\,ds\right) b\,Q_{gen}$ analytically with cancellation-free eigenvalues $\lambda_1 < \lambda_2 \le 0$, preserving First-Law adiabatic conservation to $\sim 10^{-14}\text{ J}$. Under `3C / 2.2C` bidirectional pulses (`NMC811`, $h_{sa} = 1.1\text{ W/K}$), $T_{core}$ reaches `37.6 °C` while $T_{surf}$ reads `29.0 °C` (**`8.67 °C` radial core–surface divergence**; `7.3 °C` above a single-node lumped model).
+- **Zero-overshoot implicit `CC-CV` fast-charging (`simulate_cc_cv_charge`):** Solves end-of-step $V_{term}(t + \Delta t; I_{cv}) = V_{max}$ and $T_{core}(t + \Delta t; I) \le T_{core,max}$, achieving `0.00 V` voltage overshoot (`NMC811` `2C` `CC -> CV` at `15.6 min`, `LFP` `2C` `CC -> CV` at `26.7 min`).
+- **Multi-constraint receding-horizon State-of-Power (`compute_sop_limits`):** Computes horizon-sustained $(P_{dis,max}, P_{chg,max})$ across `10 s / 30 s / 120 s` windows subject to simultaneous hardware current, SoC window, $V_{min}/V_{max}$, sub-zero lithium-plating taper ($T \le 0\,^\circ\text{C}$ lockout), and $T_{core} \le 48\,^\circ\text{C}$ derating, reporting the active bottleneck (`"voltage"`, `"soc"`, `"current"`, or `"thermal_core"`).
+
+![2-Node Radial Thermal Divergence, CC-CV Fast-Charge Taper, and Horizon SOP BMS Derating](results/thermal_sop_derating.png)
 
 ## Citation
 
