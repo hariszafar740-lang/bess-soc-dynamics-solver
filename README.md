@@ -1,13 +1,28 @@
 # Battery Energy Storage System (BESS) SoC & Dynamics Solver
 
 [![CI](https://github.com/hariszafar740-lang/bess-soc-dynamics-solver/actions/workflows/ci.yml/badge.svg)](https://github.com/hariszafar740-lang/bess-soc-dynamics-solver/actions/workflows/ci.yml)
+[![Deploy GitHub Pages](https://github.com/hariszafar740-lang/bess-soc-dynamics-solver/actions/workflows/deploy_pages.yml/badge.svg)](https://hariszafar740-lang.github.io/bess-soc-dynamics-solver/)
+[![Release](https://img.shields.io/github/v/release/hariszafar740-lang/bess-soc-dynamics-solver)](https://github.com/hariszafar740-lang/bess-soc-dynamics-solver/releases/tag/v1.0.0)
 ![Python Version](https://img.shields.io/badge/python-3.10%E2%80%933.13-blue)
+![Typing](https://img.shields.io/badge/typing-PEP%20561-informational)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Domain](https://img.shields.io/badge/Focus-Grid%20Storage%20%26%20Electrochemical%20Modeling-green)
+
+> **Live Interactive Browser Workbench (Zero-CDN HTML5/Canvas):**
+> **[https://hariszafar740-lang.github.io/bess-soc-dynamics-solver/](https://hariszafar740-lang.github.io/bess-soc-dynamics-solver/)** — interactively sweep `NMC811` vs. `LFP` chemistry, ambient temperature (`-10 °C` to `+50 °C`), C-rate, `EKF` initialization offset, 2-node convective cooling $h_{sa}$, receding-horizon `SOP` bottlenecks, `EIS` Nyquist spectra, and 12-year rainflow aging trajectories.
 
 Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (ECM)**, a **chemistry-parameterized 2RC dual-polarization ECM (`NMC811` & `LFP`)** with **monotone PCHIP open-circuit potential splines**, **Plett one-state voltage hysteresis**, **Bernardi reversible + irreversible heat balances**, **EIS Nyquist synthesis**, **closed-loop `EKF` / `UKF` `SoC` estimators**, **2-node radial core–surface thermal & `SOP` BMS derating**, and **ASTM E1049-85 rainflow + semi-empirical SEI/plating lifetime degradation**.
 
 > **Scope and validation status.** Equilibrium open-circuit voltage (`OCV`) and entropic (`dU/dT`) lookup tables in `src/cell_chemistry.py` are extracted at 1% SoC resolution from published electrode parameterizations in `PyBaMM 26.10.1.1` (`O'Regan et al., 2022` for LG M50 NMC811; `Prada et al., 2013` for A123 26650 LFP) and verified in CI (`tests/test_pybamm_crosscheck.py`). Dynamic 2RC resistances, capacitances, hysteresis scales, and lumped convective coefficients remain representative single-cell engineering values rather than pack-level or safety-certified manufacturer specifications.
+
+## Quantitative Verification & Benchmark Summary (`v1.0.0`)
+
+| Subsystem / Module | Physical Formulation & Numerical Method | Verified Benchmark Metric |
+| :--- | :--- | :--- |
+| **1RC Electro-Thermal Baseline** | Exact ZOH RC polarization + Arrhenius $R(T)$ + lumped Joule–convective ODE | `3C` pulsed discharge @ `25 °C`: `Min V_term = 3.181 V`, `Peak T_cell = 30.97 °C`, `Final SoC = 25.0%` |
+| **2RC Chemistry ECM (`NMC811` & `LFP`)** | `PyBaMM 26.10.1.1` PCHIP `OCV` & $\partial U/\partial T$, Plett hysteresis, Bernardi $Q_{irrev}+Q_{rev}$, EIS | `NMC811` $R_{dc}(25/10\,^\circ\text{C}) = 50.0/83.0\text{ m}\Omega$; `1C` $Q_{rev} \in [-0.18, +0.62]\text{ W}$ |
+| **Closed-Loop `EKF` & `UKF` Estimators** | Analytical $3\times 3$ state/measurement Jacobians, Joseph covariance, 7-point UT, $\chi^2$ NIS gate | `-23%` init offset + `+0.05C` bias: `NMC811` CC/EKF/UKF = `25.4% / 1.26% / 1.28%`; `LFP` = `25.4% / 7.19% / 6.69%` |
+| **2-Node Radial Thermal & BMS `SOP`** | Exact $2\times 2$ Putzer matrix exponential ($T_{core}, T_{surf}$), implicit `CC-CV`, horizon bisection | `Peak ΔT_core-surf = 8.67 °C`; `2C` `CC->CV` = `15.6 / 26.7 min` (`0.00 V` overshoot); `0 °C` plating charge lockout |
+| **ASTM E1049-85 Rainflow & Aging** | 4-point rainflow stack + virtual-age SEI ($t^{0.5}$), Wöhler DoD ($\beta_{dod}$), Waldmann cold Li-plating | `80% DoD` Arbitrage EoL (`NMC811 / LFP`) = `4.1 / 11.0 yr`; `PJM RegD` 12-yr SoH = `80.9% / 87.7%`; `20 °C` V-curve min |
 
 ## Repository layout
 
@@ -19,7 +34,8 @@ Python engine implementing a baseline **1RC Thevenin Equivalent Circuit Model (E
 | `src/soc_estimators.py` | `CoulombCountingEstimator`, `ExtendedKalmanFilterEstimator` (analytical Jacobians + Joseph update), `UnscentedKalmanFilterEstimator` (7-sigma-point UT + NIS gating) |
 | `src/bms_thermal_sop.py` | `TwoNodeThermalNetwork` (exact $2 \times 2$ Putzer matrix exponential), `CoupledTwoNodeBESS`, `simulate_cc_cv_charge`, `compute_sop_limits` |
 | `src/degradation_model.py` | `extract_rainflow_cycles` (ASTM E1049-85 4-point stack), `SemiEmpiricalAgingModel` (virtual-age SEI + Wöhler DoD + Waldmann plating), `simulate_grid_duty_aging` |
-| `src/cli.py` / `pyproject.toml` | PEP 621 + PEP 561 typed package (`bess_solver`) & 7-subcommand `bess-sim` CLI (`info`, `pulse`, `ecm`, `estimate`, `sop`, `degrade`, `sweep`) |
+| `src/cli.py` / `pyproject.toml` | PEP 621 + PEP 561 typed package (`bess_solver` `v1.0.0`) & 8-subcommand `bess-sim` CLI (`info`, `pulse`, `ecm`, `estimate`, `sop`, `degrade`, `sweep`, `web`) |
+| `src/web_dashboard.py` | Zero-CDN interactive HTML5/Canvas BESS workbench & GitHub Pages static bundle generator (`bess-sim web`) |
 | `src/thermal_model.py` | `ThermalBESSModel`, `arrhenius_factor`, shared reference constants and temperature envelope |
 | `src/sensitivity_analysis.py` | `run_thermal_sensitivity_sweep`, `SimulationError` |
 | `src/profile_generator.py` | Pulsed and deterministic grid load profiles |
@@ -223,14 +239,31 @@ pip install --no-build-isolation -e ".[dev]"
 
 | Subcommand | Example Invocation | Purpose |
 | :--- | :--- | :--- |
-| `info` | `bess-sim info --json` | Package version (`0.7.0`), cell chemistry specs (`NMC811`, `LFP`) & aging parameters |
+| `info` | `bess-sim info --json` | Package version (`1.0.0`), cell chemistry specs (`NMC811`, `LFP`) & aging parameters |
 | `pulse` | `bess-sim pulse --c-rate 3.0 --temp-c 25 --json` | 1RC electro-thermal pulsed discharge trajectory & optional Figure 1 export |
 | `ecm` | `bess-sim ecm --chemistry both --soc 0.50 --json` | 2RC polarization impedances, OCV/entropic coefficients & EIS Nyquist metrics |
 | `estimate` | `bess-sim estimate --chemistry both --json` | Closed-loop Coulomb counting vs. `EKF` & `UKF` SoC estimation benchmark |
 | `sop` | `bess-sim sop --chemistry nmc811 --temp-c -5 --json` | 2-node thermal & receding-horizon `SOP` power limits (`2s / 10s / 30s`) |
 | `degrade` | `bess-sim degrade --chemistry lfp --mode deep_arbitrage --json` | ASTM E1049-85 rainflow + virtual-age SEI/cycle/plating lifetime projection |
 | `sweep` | `bess-sim sweep --temps-c 10,25,40,50 --c-rates 1,2,3,4` | Multi-temperature $\times$ C-rate voltage-sag & peak-temperature matrix |
+| `web` | `bess-sim web --output-dir site --json` | Generate standalone zero-CDN HTML5/Canvas interactive BESS workbench |
+
+## Engineering Assumptions & Scope Limitations
+
+- **Single-cell vs. multi-rack pack dynamics:** All models resolve cell-level terminal voltage, radial core–surface temperature ($T_{core}, T_{surf}$), state-of-charge, state-of-power, and semi-empirical capacity/resistance aging. Pack-level busbar impedance, cell-to-cell parameter dispersion, active balancing, and HVAC coolant manifold hydraulics are outside repository scope.
+- **Thermal envelope (`[-20 °C, +60 °C]`):** `ThermalBESSModel` and `TwoNodeThermalNetwork` solve reversible entropic plus irreversible ohmic/polarization heat transfer; exothermic abuse reactions (SEI decomposition, cathode oxygen release, or thermal runaway propagation) are intentionally not modeled or claimed.
+- **Semi-empirical aging calibration:** Virtual-age SEI, Wöhler DoD, and Waldmann cold lithium-plating laws reproduce published qualitative and order-of-magnitude lifetime trends (`Schmalstieg 2014`, `Wang 2014`, `Waldmann 2014`, `Xu 2018`), and require cell-lot cycling data before commercial warranty sizing.
 
 ## Citation
 
-Machine-readable citation metadata is provided in [`CITATION.cff`](CITATION.cff).
+Machine-readable citation metadata is provided in [`CITATION.cff`](CITATION.cff):
+
+```bibtex
+@software{zafar2026bess,
+  author       = {Zafar, Haris},
+  title        = {Battery Energy Storage System (BESS) Electro-Thermal, BMS \& Degradation Solver},
+  version      = {1.0.0},
+  year         = {2026},
+  url          = {https://github.com/hariszafar740-lang/bess-soc-dynamics-solver}
+}
+```

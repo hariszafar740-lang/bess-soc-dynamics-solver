@@ -18,8 +18,8 @@ from bess_solver.cli import CLI_VERSION, main
 
 class TestPackageNamespaceAndWheelHygiene:
     def test_public_namespace_version_and_py_typed_marker(self):
-        assert bess_solver.__version__ == "0.7.0"
-        assert src.__version__ == "0.7.0"
+        assert bess_solver.__version__ == "1.0.0"
+        assert src.__version__ == "1.0.0"
         assert CLI_VERSION == bess_solver.__version__
         assert set(bess_solver.__all__) == set(src.__all__)
 
@@ -103,7 +103,7 @@ class TestBessSimCLISubcommands:
         payload = json.loads(capsys.readouterr().out)
         assert payload["package"] == "bess-soc-dynamics-solver"
         assert payload["namespace"] == "bess_solver"
-        assert payload["version"] == "0.7.0"
+        assert payload["version"] == "1.0.0"
         assert len(payload["chemistries"]) == 2
 
         assert main(["info"]) == 0

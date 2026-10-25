@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bess-soc-dynamics-solver"
-version = "0.7.0"
+version = "1.0.0"
 description = "Physics-grounded lithium-ion BESS 1RC/2RC electro-thermal, EKF/UKF SoC, 2-node SOP & ASTM E1049-85 degradation solver."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -24,7 +24,7 @@ keywords = [
   "battery-degradation",
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3",
@@ -52,6 +52,7 @@ validation = [
 
 [project.urls]
 Homepage = "https://github.com/hariszafar740-lang/bess-soc-dynamics-solver"
+Workbench = "https://hariszafar740-lang.github.io/bess-soc-dynamics-solver/"
 Repository = "https://github.com/hariszafar740-lang/bess-soc-dynamics-solver"
 Issues = "https://github.com/hariszafar740-lang/bess-soc-dynamics-solver/issues"
 
