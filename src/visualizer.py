@@ -726,3 +726,208 @@ def plot_thermal_sop_derating(
     plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.972))
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
+def plot_degradation_benchmark(
+    bench,
+    save_path: str = "results/degradation_rainflow_aging.png",
+) -> None:
+    """Render 4-panel ASTM E1049-85 rainflow, 12-yr SoH, Waldmann V-curve & R0 growth figure."""
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    fig, axs = plt.subplots(2, 2, figsize=(13.8, 9.6))
+    ax_rf, ax_soh = axs[0, 0], axs[0, 1]
+    ax_wald, ax_res = axs[1, 0], axs[1, 1]
+
+    regd = bench.regd_sample_nmc
+    arb = bench.arb_sample_nmc
+    ax_rf.plot(
+        arb.time_s / 60.0,
+        arb.soc * 100.0,
+        color="#64748b",
+        lw=1.9,
+        ls="--",
+        label=f"Deep Arbitrage (4 h, {len(arb.cycles)} cycles, {arb.block_efc:.2f} EFC)",
+    )
+    ax_rf.plot(
+        regd.time_s / 60.0,
+        regd.soc * 100.0,
+        color="#1d4ed8",
+        lw=1.9,
+        label=f"PJM RegD AGC (4 h, {len(regd.cycles)} cycles, {regd.block_efc:.2f} EFC)",
+    )
+    ax_rf.scatter(
+        regd.turning_time_s / 60.0,
+        regd.turning_soc * 100.0,
+        color="#dc2626",
+        s=18,
+        zorder=4,
+        label=f"ASTM E1049-85 Reversals ({len(regd.turning_soc)} extrema)",
+    )
+    ax_rf.set_title(
+        "(a) ASTM E1049-85 Rainflow Reversal Extraction: RegD vs. Deep Arbitrage",
+        fontsize=10.4,
+        fontweight="bold",
+    )
+    ax_rf.set_xlabel("Dispatch Time (minutes)", fontsize=9.5, fontweight="bold")
+    ax_rf.set_ylabel("State of Charge SoC (%)", fontsize=9.5, fontweight="bold")
+    ax_rf.set_xlim(0.0, 240.0)
+    ax_rf.set_ylim(0.0, 116.0)
+    ax_rf.grid(True, ls="--", alpha=0.42)
+    ax_rf.legend(loc="upper right", fontsize=7.9, framealpha=0.95)
+
+    na = bench.nmc_arb
+    nr = bench.nmc_regd
+    la = bench.lfp_arb
+    lr = bench.lfp_regd
+    annual_efc = int(round(float(na.efc[-1]) / 12.0))
+
+    ax_soh.axhline(80.0, color="#dc2626", lw=1.3, ls=":", label="80.0% SoH End-of-Life (EoL) Threshold")
+    ax_soh.plot(
+        lr.years,
+        lr.soh_pct,
+        color="#059669",
+        lw=2.2,
+        ls="-",
+        label=f"LFP — PJM RegD (12 yr SoH = {lr.soh_pct[-1]:.1f}%)",
+    )
+    ax_soh.plot(
+        nr.years,
+        nr.soh_pct,
+        color="#2563eb",
+        lw=2.1,
+        ls="-.",
+        label=f"NMC811 — PJM RegD (12 yr SoH = {nr.soh_pct[-1]:.1f}%)",
+    )
+    ax_soh.plot(
+        la.years,
+        la.soh_pct,
+        color="#0d9488",
+        lw=2.1,
+        ls="--",
+        label=f"LFP — Deep Arbitrage (EoL @ {la.eol_years:.1f} yr / {la.eol_efc:.0f} EFC)",
+    )
+    ax_soh.plot(
+        na.years,
+        na.soh_pct,
+        color="#ea580c",
+        lw=2.2,
+        ls="-",
+        label=f"NMC811 — Deep Arbitrage (EoL @ {na.eol_years:.1f} yr / {na.eol_efc:.0f} EFC)",
+    )
+    ax_soh.scatter([na.eol_years, la.eol_years], [80.0, 80.0], color="#dc2626", s=34, zorder=5)
+    ax_soh.set_title(
+        f"(b) 12-Year Capacity Retention SoH_Q(t) at Matched ~{annual_efc} EFC/yr Throughput",
+        fontsize=10.4,
+        fontweight="bold",
+    )
+    ax_soh.set_xlabel("Operating Time (Years)", fontsize=9.5, fontweight="bold")
+    ax_soh.set_ylabel("Capacity State-of-Health SoH_Q (%)", fontsize=9.5, fontweight="bold")
+    ax_soh.set_xlim(0.0, 12.0)
+    ax_soh.set_ylim(46.0, 102.0)
+    ax_soh.grid(True, ls="--", alpha=0.42)
+    ax_soh.legend(loc="lower left", fontsize=7.7, framealpha=0.95)
+
+    wt = bench.waldmann_temps_c
+    ax_wald.plot(
+        wt,
+        bench.nmc_fade_500efc_pct,
+        color="#1d4ed8",
+        lw=2.3,
+        label=(
+            f"NMC811 Total Fade (Min @ {bench.optimal_temp_nmc_c:.0f} °C "
+            f"= {bench.nmc_fade_500efc_pct.min():.1f}%)"
+        ),
+    )
+    ax_wald.plot(
+        wt,
+        bench.nmc_plating_500efc_pct,
+        color="#0284c7",
+        lw=1.7,
+        ls="--",
+        label="NMC811 Cold Anodic Li-Plating Branch",
+    )
+    ax_wald.plot(
+        wt,
+        bench.nmc_sei_500efc_pct,
+        color="#ea580c",
+        lw=1.7,
+        ls="-.",
+        label="NMC811 Arrhenius SEI + Cycle Branch",
+    )
+    ax_wald.plot(
+        wt,
+        bench.lfp_fade_500efc_pct,
+        color="#059669",
+        lw=2.1,
+        label="LFP Total Fade (500 EFC @ 1.0C)",
+    )
+    ax_wald.axvspan(15.0, 28.0, color="#22c55e", alpha=0.13, label="Optimal BTMS Window (15–28 °C)")
+    idx_opt = int(np.argmin(bench.nmc_fade_500efc_pct))
+    ax_wald.scatter(
+        [wt[idx_opt]],
+        [bench.nmc_fade_500efc_pct[idx_opt]],
+        color="#1d4ed8",
+        s=42,
+        zorder=5,
+    )
+    ax_wald.set_title(
+        "(c) Waldmann V-Curve: Li-Plating vs. Arrhenius SEI Crossover (500 EFC @ 1C)",
+        fontsize=10.4,
+        fontweight="bold",
+    )
+    ax_wald.set_xlabel("Operating Temperature (°C)", fontsize=9.5, fontweight="bold")
+    ax_wald.set_ylabel("Cumulative Capacity Loss Q_loss (%)", fontsize=9.5, fontweight="bold")
+    ax_wald.set_xlim(-5.0, 50.0)
+    ax_wald.set_ylim(0.0, 36.0)
+    ax_wald.grid(True, ls="--", alpha=0.42)
+    ax_wald.legend(loc="upper right", fontsize=7.6, framealpha=0.95)
+
+    ax_res.plot(
+        na.efc,
+        na.delta_r_pct,
+        color="#ea580c",
+        lw=2.2,
+        label=f"NMC811 — Deep Arbitrage (+{na.delta_r_pct[-1]:.0f}% @ {na.efc[-1]:.0f} EFC)",
+    )
+    ax_res.plot(
+        la.efc,
+        la.delta_r_pct,
+        color="#0d9488",
+        lw=2.1,
+        ls="--",
+        label=f"LFP — Deep Arbitrage (+{la.delta_r_pct[-1]:.1f}% @ {la.efc[-1]:.0f} EFC)",
+    )
+    ax_res.plot(
+        nr.efc,
+        nr.delta_r_pct,
+        color="#2563eb",
+        lw=2.0,
+        ls="-.",
+        label=f"NMC811 — PJM RegD (+{nr.delta_r_pct[-1]:.1f}% @ {nr.efc[-1]:.0f} EFC)",
+    )
+    ax_res.plot(
+        lr.efc,
+        lr.delta_r_pct,
+        color="#059669",
+        lw=2.1,
+        label=f"LFP — PJM RegD (+{lr.delta_r_pct[-1]:.1f}% @ {lr.efc[-1]:.0f} EFC)",
+    )
+    ax_res.set_title(
+        "(d) Coupled Ohmic & Polarization Resistance Growth ΔR / R_BOL (%)",
+        fontsize=10.4,
+        fontweight="bold",
+    )
+    ax_res.set_xlabel("Cumulative Throughput (Equivalent Full Cycles, EFC)", fontsize=9.5, fontweight="bold")
+    ax_res.set_ylabel("Resistance Growth ΔR / R_BOL (%)", fontsize=9.5, fontweight="bold")
+    ax_res.set_xlim(0.0, 3850.0)
+    ax_res.set_ylim(0.0, 142.0)
+    ax_res.grid(True, ls="--", alpha=0.42)
+    ax_res.legend(loc="upper left", fontsize=7.8, framealpha=0.95)
+
+    fig.suptitle(
+        "Grid BESS Degradation Engine: ASTM E1049-85 Rainflow, SEI Calendar/Cycle Fade & Waldmann Plating",
+        fontsize=12.0,
+        fontweight="bold",
+        y=0.992,
+    )
+    plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.972))
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)

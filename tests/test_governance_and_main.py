@@ -10,7 +10,7 @@ import src
 
 
 def test_public_package_exports_and_version():
-    assert src.__version__ == "0.5.0"
+    assert src.__version__ == "0.6.0"
     for symbol in (
         "LiIonBatteryModel",
         "ThermalBESSModel",
@@ -52,12 +52,32 @@ def test_public_package_exports_and_version():
         "CoupledTwoNodeBESS",
         "CCCVChargeResult",
         "simulate_cc_cv_charge",
+        "SOPBottleneck",
         "SOPResult",
         "compute_sop_limits",
         "ThermalPulseRun",
         "ThermalSOPBenchmarkResult",
         "run_thermal_sop_benchmark",
         "plot_thermal_sop_derating",
+        "GridDutyMode",
+        "RainflowCycle",
+        "extract_turning_points",
+        "extract_rainflow_cycles",
+        "DegradationSpec",
+        "NMC811_AGING_SPEC",
+        "LFP_AGING_SPEC",
+        "get_degradation_spec",
+        "AgingState",
+        "AgingStepResult",
+        "SemiEmpiricalAgingModel",
+        "DutyCycleSample",
+        "DutyAgingProjection",
+        "DegradationBenchmarkResult",
+        "generate_grid_duty_current",
+        "simulate_duty_cycle_block",
+        "simulate_grid_duty_aging",
+        "run_degradation_benchmark",
+        "plot_degradation_benchmark",
     ):
         assert hasattr(src, symbol)
 
@@ -101,11 +121,25 @@ def test_generate_thermal_sop_figure_reproducible(tmp_path):
     assert metrics["sop_30s_peak_dis_w"] > 65.0
 
 
+def test_generate_degradation_figure_reproducible(tmp_path):
+    fig_path = tmp_path / "degradation_rainflow_aging.png"
+    metrics = main_mod.generate_degradation_figure(save_path=str(fig_path))
+    assert fig_path.is_file() and fig_path.stat().st_size > 50_000
+    nmc_eol = float(metrics["nmc_arb_eol_yr"])
+    lfp_eol = float(metrics["lfp_arb_eol_yr"])
+    assert nmc_eol > 3.0
+    assert lfp_eol > nmc_eol + 5.0
+    assert float(metrics["nmc_regd_12yr_soh_pct"]) > 78.0
+    assert float(metrics["lfp_regd_12yr_soh_pct"]) > float(metrics["nmc_regd_12yr_soh_pct"])
+    assert 15.0 <= float(metrics["optimal_temp_nmc_c"]) <= 26.0
+
+
 def test_main_entrypoint_prints_sweep_without_runaway_overclaim(capsys, tmp_path, monkeypatch):
     real_ref = main_mod.generate_reference_dynamic_figure
     real_chem = main_mod.generate_chemistry_comparison_figure
     real_soc = main_mod.generate_soc_estimation_figure
     real_sop = main_mod.generate_thermal_sop_figure
+    real_deg = main_mod.generate_degradation_figure
     monkeypatch.setattr(
         main_mod,
         "generate_reference_dynamic_figure",
@@ -126,12 +160,18 @@ def test_main_entrypoint_prints_sweep_without_runaway_overclaim(capsys, tmp_path
         "generate_thermal_sop_figure",
         lambda: real_sop(save_path=str(tmp_path / "fig4.png")),
     )
+    monkeypatch.setattr(
+        main_mod,
+        "generate_degradation_figure",
+        lambda: real_deg(save_path=str(tmp_path / "fig5.png")),
+    )
     main_mod.main()
     out = capsys.readouterr().out
     assert "BESS ELECTRO-THERMAL PARAMETER SENSITIVITY" in out
     assert "2RC Chemistry Benchmark (NMC811 vs LFP)" in out
     assert "Closed-Loop SoC RMSE" in out
     assert "2-Node Thermal & SOP BMS" in out
+    assert "Rainflow & SEI Aging (12 yr)" in out
     assert "DAY 14" not in out
     assert "THERMAL RUNAWAY RISK" not in out
 
@@ -159,6 +199,7 @@ def test_governance_files_and_readme_asset_integrity():
     assert "results/chemistry_2rc_comparison.png" in local_imgs
     assert "results/soc_ekf_ukf_benchmark.png" in local_imgs
     assert "results/thermal_sop_derating.png" in local_imgs
+    assert "results/degradation_rainflow_aging.png" in local_imgs
     for img_rel in local_imgs:
-        img_file = root / img_rel
-        assert img_file.is_file() and img_file.stat().st_size > 30_000
+        img_path = root / img_rel
+        assert img_path.is_file() and img_path.stat().st_size > 30_000, f"Missing/empty image: {img_rel}"
