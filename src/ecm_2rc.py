@@ -32,15 +32,15 @@ from typing import Literal
 
 import numpy as np
 
-from src.bess_model import SOC_TOL
-from src.cell_chemistry import (
+from .bess_model import SOC_TOL
+from .cell_chemistry import (
     LFP_A123_ANR26650_2P3AH,
     NMC811_LG_M50_5AH,
     ChemistrySpec,
     MonotonePCHIP,
     get_chemistry_spec,
 )
-from src.thermal_model import arrhenius_factor, check_temperature_k
+from .thermal_model import arrhenius_factor, check_temperature_k
 
 __all__ = [
     "ChemistryComparisonResult",

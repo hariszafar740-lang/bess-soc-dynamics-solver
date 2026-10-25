@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: pytest + ruff (Python ${{ matrix.python-version }})
+    name: pytest + ruff + wheel (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -24,10 +24,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      - name: Install dependencies
+      - name: Install package & dev dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          python -m pip install --upgrade pip "setuptools>=77.0" wheel build
+          pip install --no-build-isolation -e ".[dev]"
 
       - name: Install independent PyBaMM validation reference (Python 3.11 & 3.12)
         if: matrix.python-version == '3.11' || matrix.python-version == '3.12'
@@ -38,6 +38,24 @@ jobs:
 
       - name: Test (pytest)
         run: python -m pytest -v
+
+      - name: Verify CLI entrypoint & wheel layout
+        run: |
+          bess-sim info --json
+          python -m bess_solver info
+          python -m build --no-isolation
+          python - << 'PY'
+          import glob
+          import zipfile
+
+          whls = glob.glob("dist/*.whl")
+          assert len(whls) == 1, whls
+          names = zipfile.ZipFile(whls[0]).namelist()
+          assert "bess_solver/__init__.py" in names
+          assert "bess_solver/py.typed" in names
+          assert not any(n.startswith("src/") for n in names), names
+          PY
+          rm -rf dist build
 
       - name: Smoke-run main benchmark & artifact generation
         run: python main.py

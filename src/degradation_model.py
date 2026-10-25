@@ -27,14 +27,14 @@ from typing import Literal
 
 import numpy as np
 
-from src.bms_thermal_sop import CoupledTwoNodeBESS, CoupledTwoNodeState
-from src.cell_chemistry import (
+from .bms_thermal_sop import CoupledTwoNodeBESS, CoupledTwoNodeState
+from .cell_chemistry import (
     LFP_A123_ANR26650_2P3AH,
     NMC811_LG_M50_5AH,
     ChemistrySpec,
     get_chemistry_spec,
 )
-from src.thermal_model import R_GAS, T_REF_K, check_temperature_k
+from .thermal_model import R_GAS, T_REF_K, check_temperature_k
 
 __all__ = [
     "AgingState",

@@ -10,7 +10,7 @@ import src
 
 
 def test_public_package_exports_and_version():
-    assert src.__version__ == "0.6.0"
+    assert src.__version__ == "0.7.0"
     for symbol in (
         "LiIonBatteryModel",
         "ThermalBESSModel",
@@ -190,6 +190,8 @@ def test_governance_files_and_readme_asset_integrity():
         ".github/ISSUE_TEMPLATE/bug_report.yml",
         ".github/ISSUE_TEMPLATE/feature_request.yml",
         "requirements-validation.txt",
+        "pyproject.toml",
+        "src/py.typed",
     ):
         assert (root / rel).is_file(), f"Missing governance file: {rel}"
 

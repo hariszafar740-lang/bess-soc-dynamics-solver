@@ -22,9 +22,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from src.cell_chemistry import LFP_A123_ANR26650_2P3AH, NMC811_LG_M50_5AH, ChemistrySpec
-from src.ecm_2rc import TwoRCBatteryModel, TwoRCState
-from src.thermal_model import check_temperature_k
+from .cell_chemistry import LFP_A123_ANR26650_2P3AH, NMC811_LG_M50_5AH, ChemistrySpec
+from .ecm_2rc import TwoRCBatteryModel, TwoRCState
+from .thermal_model import check_temperature_k
 
 __all__ = [
     "ChemistryEstimationRun",
@@ -709,6 +709,7 @@ def run_single_chemistry_estimation(
         ekf_nis[k] = r_ekf.nis
 
     post_mask = time_s >= 300.0
+    has_post = bool(np.any(post_mask))
     err_cc = soc_cc - soc_true
     err_ekf = soc_ekf - soc_true
     err_ukf = soc_ukf - soc_true
@@ -733,9 +734,9 @@ def run_single_chemistry_estimation(
         rmse_cc_full=float(np.sqrt(np.mean(err_cc * err_cc))),
         rmse_ekf_full=float(np.sqrt(np.mean(err_ekf * err_ekf))),
         rmse_ukf_full=float(np.sqrt(np.mean(err_ukf * err_ukf))),
-        rmse_cc_post_300s=float(np.sqrt(np.mean(err_cc[post_mask] ** 2))),
-        rmse_ekf_post_300s=float(np.sqrt(np.mean(err_ekf[post_mask] ** 2))),
-        rmse_ukf_post_300s=float(np.sqrt(np.mean(err_ukf[post_mask] ** 2))),
+        rmse_cc_post_300s=float(np.sqrt(np.mean(err_cc[post_mask] ** 2))) if has_post else float("nan"),
+        rmse_ekf_post_300s=float(np.sqrt(np.mean(err_ekf[post_mask] ** 2))) if has_post else float("nan"),
+        rmse_ukf_post_300s=float(np.sqrt(np.mean(err_ukf[post_mask] ** 2))) if has_post else float("nan"),
         convergence_time_ekf_s=_first_sustained_convergence_s(time_s, np.abs(err_ekf)),
         convergence_time_ukf_s=_first_sustained_convergence_s(time_s, np.abs(err_ukf)),
     )
