@@ -21,6 +21,16 @@ from src.ecm_2rc import (
 )
 from src.profile_generator import LoadProfileGenerator
 from src.sensitivity_analysis import SimulationError, run_thermal_sensitivity_sweep
+from src.soc_estimators import (
+    ChemistryEstimationRun,
+    CoulombCountingEstimator,
+    EstimatorStepResult,
+    ExtendedKalmanFilterEstimator,
+    SoCEstimationBenchmarkResult,
+    UnscentedKalmanFilterEstimator,
+    run_single_chemistry_estimation,
+    run_soc_estimation_benchmark,
+)
 from src.thermal_model import (
     EA_J_MOL,
     R_GAS,
@@ -31,16 +41,24 @@ from src.thermal_model import (
     arrhenius_factor,
     check_temperature_k,
 )
-from src.visualizer import plot_bess_response, plot_chemistry_2rc_comparison
+from src.visualizer import (
+    plot_bess_response,
+    plot_chemistry_2rc_comparison,
+    plot_soc_estimation_benchmark,
+)
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 __all__ = [
     "__version__",
     "ChemistryComparisonResult",
+    "ChemistryEstimationRun",
     "ChemistrySpec",
+    "CoulombCountingEstimator",
     "EA_J_MOL",
     "EISResult",
+    "EstimatorStepResult",
+    "ExtendedKalmanFilterEstimator",
     "HPPCBenchmarkResult",
     "LFP_A123_ANR26650_2P3AH",
     "LiIonBatteryModel",
@@ -50,6 +68,7 @@ __all__ = [
     "R_GAS",
     "SOC_TOL",
     "SimulationError",
+    "SoCEstimationBenchmarkResult",
     "T_MAX_K",
     "T_MIN_K",
     "T_REF_K",
@@ -57,6 +76,7 @@ __all__ = [
     "TwoRCBatteryModel",
     "TwoRCState",
     "TwoRCStepResult",
+    "UnscentedKalmanFilterEstimator",
     "arrhenius_factor",
     "check_temperature_k",
     "compute_eis_nyquist",
@@ -64,6 +84,9 @@ __all__ = [
     "list_chemistry_specs",
     "plot_bess_response",
     "plot_chemistry_2rc_comparison",
+    "plot_soc_estimation_benchmark",
     "run_chemistry_comparison_benchmark",
+    "run_single_chemistry_estimation",
+    "run_soc_estimation_benchmark",
     "run_thermal_sensitivity_sweep",
 ]

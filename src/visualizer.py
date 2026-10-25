@@ -306,3 +306,212 @@ def plot_chemistry_2rc_comparison(
     plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.972))
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
+
+
+def plot_soc_estimation_benchmark(
+    bench,
+    save_path: str = "results/soc_ekf_ukf_benchmark.png",
+) -> None:
+    """Render 4-panel closed-loop EKF & UKF vs Coulomb Counting SoC benchmark figure."""
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    fig, axs = plt.subplots(2, 2, figsize=(13.8, 9.6))
+    ax_nmc, ax_lfp = axs[0, 0], axs[0, 1]
+    ax_err, ax_obs = axs[1, 0], axs[1, 1]
+
+    t_min = bench.nmc.time_s / 60.0
+
+    # Panel (a): NMC811 Closed-Loop SoC Tracking (-23% Initial Offset + +0.05C Bias)
+    r_nmc = bench.nmc
+    ax_nmc.plot(t_min, r_nmc.soc_true * 100.0, color="#0f172a", lw=2.2, label="True Plant SoC(t)")
+    ax_nmc.plot(
+        t_min,
+        r_nmc.soc_cc * 100.0,
+        color="#64748b",
+        lw=1.8,
+        ls="--",
+        label=f"Coulomb Counting (RMSE = {r_nmc.rmse_cc_full * 100.0:.1f}%)",
+    )
+    ax_nmc.plot(
+        t_min,
+        r_nmc.soc_ekf * 100.0,
+        color="#1d4ed8",
+        lw=1.9,
+        label=f"EKF (RMSE = {r_nmc.rmse_ekf_full * 100.0:.2f}%)",
+    )
+    ax_nmc.plot(
+        t_min,
+        r_nmc.soc_ukf * 100.0,
+        color="#dc2626",
+        lw=1.7,
+        ls="-.",
+        label=f"UKF (RMSE = {r_nmc.rmse_ukf_full * 100.0:.2f}%)",
+    )
+    ax_nmc.fill_between(
+        t_min,
+        (r_nmc.soc_ekf - 2.0 * r_nmc.soc_ekf_std) * 100.0,
+        (r_nmc.soc_ekf + 2.0 * r_nmc.soc_ekf_std) * 100.0,
+        color="#3b82f6",
+        alpha=0.18,
+        label="EKF ±2σ Confidence Band",
+    )
+    ax_nmc.set_title(
+        "(a) NMC811 SoC Estimation (-23% Init Error, +0.05C Bias, 8 mV Noise)",
+        fontsize=10.6,
+        fontweight="bold",
+    )
+    ax_nmc.set_xlabel("Time (minutes)", fontsize=9.5, fontweight="bold")
+    ax_nmc.set_ylabel("State of Charge SoC (%)", fontsize=9.5, fontweight="bold")
+    ax_nmc.set_xlim(0.0, 60.0)
+    ax_nmc.set_ylim(0.0, 98.0)
+    ax_nmc.grid(True, ls="--", alpha=0.42)
+    ax_nmc.legend(loc="lower left", fontsize=8.0, framealpha=0.94)
+
+    # Panel (b): LFP Flat-Plateau SoC Tracking & Nonlinear Knee Convergence
+    r_lfp = bench.lfp
+    ax_lfp.plot(t_min, r_lfp.soc_true * 100.0, color="#0f172a", lw=2.2, label="True Plant SoC(t)")
+    ax_lfp.plot(
+        t_min,
+        r_lfp.soc_cc * 100.0,
+        color="#64748b",
+        lw=1.8,
+        ls="--",
+        label=f"Coulomb Counting (RMSE = {r_lfp.rmse_cc_full * 100.0:.1f}%)",
+    )
+    ax_lfp.plot(
+        t_min,
+        r_lfp.soc_ekf * 100.0,
+        color="#059669",
+        lw=1.9,
+        label=f"EKF (RMSE = {r_lfp.rmse_ekf_full * 100.0:.2f}%)",
+    )
+    ax_lfp.plot(
+        t_min,
+        r_lfp.soc_ukf * 100.0,
+        color="#7c3aed",
+        lw=1.8,
+        ls="-.",
+        label=f"UKF (RMSE = {r_lfp.rmse_ukf_full * 100.0:.2f}%)",
+    )
+    ax_lfp.fill_between(
+        t_min,
+        (r_lfp.soc_ekf - 2.0 * r_lfp.soc_ekf_std) * 100.0,
+        (r_lfp.soc_ekf + 2.0 * r_lfp.soc_ekf_std) * 100.0,
+        color="#10b981",
+        alpha=0.18,
+        label="EKF ±2σ Confidence Band",
+    )
+    ax_lfp.set_title(
+        "(b) LFP Two-Phase Plateau SoC Estimation (Flat OCV Observability Test)",
+        fontsize=10.6,
+        fontweight="bold",
+    )
+    ax_lfp.set_xlabel("Time (minutes)", fontsize=9.5, fontweight="bold")
+    ax_lfp.set_ylabel("State of Charge SoC (%)", fontsize=9.5, fontweight="bold")
+    ax_lfp.set_xlim(0.0, 60.0)
+    ax_lfp.set_ylim(0.0, 98.0)
+    ax_lfp.grid(True, ls="--", alpha=0.42)
+    ax_lfp.legend(loc="lower left", fontsize=8.0, framealpha=0.94)
+
+    # Panel (c): Absolute SoC Estimation Error Trajectories |SoC_hat - SoC_true| (%)
+    ax_err.plot(
+        t_min,
+        np.abs(r_nmc.soc_cc - r_nmc.soc_true) * 100.0,
+        color="#64748b",
+        lw=1.8,
+        ls="--",
+        label="Open-Loop Coulomb Counting Drift",
+    )
+    ax_err.plot(
+        t_min,
+        np.abs(r_nmc.soc_ekf - r_nmc.soc_true) * 100.0,
+        color="#1d4ed8",
+        lw=1.9,
+        label="NMC811 EKF |Error|",
+    )
+    ax_err.plot(
+        t_min,
+        np.abs(r_nmc.soc_ukf - r_nmc.soc_true) * 100.0,
+        color="#dc2626",
+        lw=1.6,
+        ls="-.",
+        label="NMC811 UKF |Error|",
+    )
+    ax_err.plot(
+        t_min,
+        np.abs(r_lfp.soc_ekf - r_lfp.soc_true) * 100.0,
+        color="#059669",
+        lw=1.8,
+        label="LFP EKF |Error| (Plateau → Knee Lock)",
+    )
+    ax_err.plot(
+        t_min,
+        np.abs(r_lfp.soc_ukf - r_lfp.soc_true) * 100.0,
+        color="#7c3aed",
+        lw=1.7,
+        ls=":",
+        label="LFP UKF |Error| (Sigma-Point Knee Capture)",
+    )
+    ax_err.axhline(2.0, color="#94a3b8", lw=1.0, ls=":", label="2.0% SoC Accuracy Band")
+    ax_err.set_title(
+        "(c) Absolute SoC Estimation Error |SoC_hat - SoC_true| (%)",
+        fontsize=10.6,
+        fontweight="bold",
+    )
+    ax_err.set_xlabel("Time (minutes)", fontsize=9.5, fontweight="bold")
+    ax_err.set_ylabel("Absolute SoC Error (%)", fontsize=9.5, fontweight="bold")
+    ax_err.set_xlim(0.0, 60.0)
+    ax_err.set_ylim(0.0, 38.5)
+    ax_err.grid(True, ls="--", alpha=0.42)
+    ax_err.legend(loc="upper left", ncol=2, fontsize=7.7, framealpha=0.95)
+
+    # Panel (d): Electrochemical Voltage Observability Slope dU_ocv/dSoC (log scale)
+    soc_obs_pct = bench.soc_grid_obs * 100.0
+    ax_obs.semilogy(
+        soc_obs_pct,
+        np.maximum(1e-3, bench.nmc_docv_dsoc_v * 1e3),
+        color="#1d4ed8",
+        lw=2.1,
+        label="NMC811 dU_ocv/dSoC (mV / unit SoC)",
+    )
+    ax_obs.semilogy(
+        soc_obs_pct,
+        np.maximum(1e-3, bench.lfp_docv_dsoc_v * 1e3),
+        color="#059669",
+        lw=2.1,
+        label="LFP dU_ocv/dSoC (mV / unit SoC)",
+    )
+    ax_obs.axvspan(
+        40.0,
+        70.0,
+        color="#10b981",
+        alpha=0.14,
+        label="LFP Two-Phase Plateau (16–40 mV/SoC Weak Observability)",
+    )
+    ax_obs.axhline(
+        8.0,
+        color="#dc2626",
+        lw=1.2,
+        ls="--",
+        label="1σ Voltage Sensor Noise Floor (8 mV)",
+    )
+    ax_obs.set_title(
+        "(d) Local OCV Observability Jacobian dU_ocv/dSoC: NMC811 vs. LFP",
+        fontsize=10.6,
+        fontweight="bold",
+    )
+    ax_obs.set_xlabel("State of Charge SoC (%)", fontsize=9.5, fontweight="bold")
+    ax_obs.set_ylabel("OCV Slope dU_ocv / dSoC (mV / unit SoC)", fontsize=9.5, fontweight="bold")
+    ax_obs.set_xlim(2.0, 98.0)
+    ax_obs.set_ylim(5.0, 1.2e5)
+    ax_obs.grid(True, which="both", ls="--", alpha=0.38)
+    ax_obs.legend(loc="upper right", fontsize=7.9, framealpha=0.95)
+
+    fig.suptitle(
+        "Closed-Loop Nonlinear BESS SoC Estimation: EKF & UKF vs. Drifting Coulomb Counting",
+        fontsize=12.2,
+        fontweight="bold",
+        y=0.992,
+    )
+    plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.972))
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
