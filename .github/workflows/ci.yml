@@ -43,6 +43,8 @@ jobs:
         run: |
           bess-sim info --json
           python -m bess_solver info
+          bess-sim web --output-dir dist_site --json
+          rm -rf dist_site
           python -m build --no-isolation
           python - << 'PY'
           import glob

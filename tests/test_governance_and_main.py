@@ -10,7 +10,7 @@ import src
 
 
 def test_public_package_exports_and_version():
-    assert src.__version__ == "0.7.0"
+    assert src.__version__ == "1.0.0"
     for symbol in (
         "LiIonBatteryModel",
         "ThermalBESSModel",
@@ -186,6 +186,7 @@ def test_governance_files_and_readme_asset_integrity():
         "SECURITY.md",
         ".gitignore",
         ".github/workflows/ci.yml",
+        ".github/workflows/deploy_pages.yml",
         ".github/PULL_REQUEST_TEMPLATE.md",
         ".github/ISSUE_TEMPLATE/bug_report.yml",
         ".github/ISSUE_TEMPLATE/feature_request.yml",

@@ -86,8 +86,13 @@ from .visualizer import (
     plot_soc_estimation_benchmark,
     plot_thermal_sop_derating,
 )
+from .web_dashboard import (
+    WORKBENCH_VERSION,
+    build_static_web_workbench,
+    build_web_presets_payload,
+)
 
-__version__ = "0.7.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "__version__",
@@ -139,8 +144,11 @@ __all__ = [
     "TwoRCState",
     "TwoRCStepResult",
     "UnscentedKalmanFilterEstimator",
+    "WORKBENCH_VERSION",
     "arrhenius_factor",
     "build_parser",
+    "build_static_web_workbench",
+    "build_web_presets_payload",
     "check_temperature_k",
     "cli_main",
     "compute_eis_nyquist",

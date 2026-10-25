@@ -7,6 +7,7 @@ authors:
     family-names: Zafar
     alias: hariszafar740-lang
 repository-code: "https://github.com/hariszafar740-lang/bess-soc-dynamics-solver"
+url: "https://hariszafar740-lang.github.io/bess-soc-dynamics-solver/"
 abstract: >-
   Installable Python simulation engine (bess_solver / bess-sim) for lithium-ion
   battery energy storage cells, combining 1RC and chemistry-parameterized 2RC
@@ -25,5 +26,5 @@ keywords:
   - rainflow-counting
   - battery-degradation
 license: MIT
-version: 0.7.0
+version: 1.0.0
 date-released: "2026-10-25"

@@ -38,10 +38,11 @@ from .visualizer import (
     plot_soc_estimation_benchmark,
     plot_thermal_sop_derating,
 )
+from .web_dashboard import build_static_web_workbench
 
 PACKAGE_NAME = "bess-soc-dynamics-solver"
 NAMESPACE_NAME = "bess_solver"
-CLI_VERSION = "0.7.0"
+CLI_VERSION = "1.0.0"
 
 
 def _unit_soc(raw: str) -> float:
@@ -369,8 +370,20 @@ def _cmd_sweep(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_web(args: argparse.Namespace) -> int:
+    summary = build_static_web_workbench(output_dir=args.output_dir)
+    if args.json:
+        _emit_json(summary)
+    else:
+        print(
+            f"Built static BESS workbench v{summary['version']} in {summary['output_dir']} "
+            f"({len(summary['files_written'])} files, {len(summary['copied_figures'])} figures)"
+        )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
-    """Construct the `bess-sim` top-level CLI parser and 7 subcommand parsers."""
+    """Construct the `bess-sim` top-level CLI parser and 8 subcommand parsers."""
     parser = argparse.ArgumentParser(
         prog="bess-sim",
         description="Physics-grounded Li-ion BESS 1RC/2RC, EKF/UKF, 2-node SOP & rainflow aging CLI.",
@@ -441,6 +454,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_swp.add_argument("--capacity-ah", type=_positive_float, default=2.5)
     p_swp.add_argument("--json", action="store_true")
     p_swp.set_defaults(func=_cmd_sweep)
+
+    p_web = sub.add_parser("web", help="Build zero-CDN static HTML5/Canvas interactive BESS workbench.")
+    p_web.add_argument("--output-dir", type=str, default="site", help="Target directory for static bundle.")
+    p_web.add_argument("--json", action="store_true")
+    p_web.set_defaults(func=_cmd_web)
 
     return parser
 
