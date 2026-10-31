@@ -786,7 +786,7 @@ def plot_degradation_benchmark(
         color="#059669",
         lw=2.2,
         ls="-",
-        label=f"LFP — PJM RegD (12 yr SoH = {lr.soh_pct[-1]:.1f}%)",
+        label=f"LFP, PJM RegD (12 yr SoH = {lr.soh_pct[-1]:.1f}%)",
     )
     ax_soh.plot(
         nr.years,
@@ -794,7 +794,7 @@ def plot_degradation_benchmark(
         color="#2563eb",
         lw=2.1,
         ls="-.",
-        label=f"NMC811 — PJM RegD (12 yr SoH = {nr.soh_pct[-1]:.1f}%)",
+        label=f"NMC811, PJM RegD (12 yr SoH = {nr.soh_pct[-1]:.1f}%)",
     )
     ax_soh.plot(
         la.years,
@@ -802,7 +802,7 @@ def plot_degradation_benchmark(
         color="#0d9488",
         lw=2.1,
         ls="--",
-        label=f"LFP — Deep Arbitrage (EoL @ {la.eol_years:.1f} yr / {la.eol_efc:.0f} EFC)",
+        label=f"LFP, Deep Arbitrage (EoL @ {la.eol_years:.1f} yr / {la.eol_efc:.0f} EFC)",
     )
     ax_soh.plot(
         na.years,
@@ -810,7 +810,7 @@ def plot_degradation_benchmark(
         color="#ea580c",
         lw=2.2,
         ls="-",
-        label=f"NMC811 — Deep Arbitrage (EoL @ {na.eol_years:.1f} yr / {na.eol_efc:.0f} EFC)",
+        label=f"NMC811, Deep Arbitrage (EoL @ {na.eol_years:.1f} yr / {na.eol_efc:.0f} EFC)",
     )
     ax_soh.scatter([na.eol_years, la.eol_years], [80.0, 80.0], color="#dc2626", s=34, zorder=5)
     ax_soh.set_title(
@@ -885,7 +885,7 @@ def plot_degradation_benchmark(
         na.delta_r_pct,
         color="#ea580c",
         lw=2.2,
-        label=f"NMC811 — Deep Arbitrage (+{na.delta_r_pct[-1]:.0f}% @ {na.efc[-1]:.0f} EFC)",
+        label=f"NMC811, Deep Arbitrage (+{na.delta_r_pct[-1]:.0f}% @ {na.efc[-1]:.0f} EFC)",
     )
     ax_res.plot(
         la.efc,
@@ -893,7 +893,7 @@ def plot_degradation_benchmark(
         color="#0d9488",
         lw=2.1,
         ls="--",
-        label=f"LFP — Deep Arbitrage (+{la.delta_r_pct[-1]:.1f}% @ {la.efc[-1]:.0f} EFC)",
+        label=f"LFP, Deep Arbitrage (+{la.delta_r_pct[-1]:.1f}% @ {la.efc[-1]:.0f} EFC)",
     )
     ax_res.plot(
         nr.efc,
@@ -901,14 +901,14 @@ def plot_degradation_benchmark(
         color="#2563eb",
         lw=2.0,
         ls="-.",
-        label=f"NMC811 — PJM RegD (+{nr.delta_r_pct[-1]:.1f}% @ {nr.efc[-1]:.0f} EFC)",
+        label=f"NMC811, PJM RegD (+{nr.delta_r_pct[-1]:.1f}% @ {nr.efc[-1]:.0f} EFC)",
     )
     ax_res.plot(
         lr.efc,
         lr.delta_r_pct,
         color="#059669",
         lw=2.1,
-        label=f"LFP — PJM RegD (+{lr.delta_r_pct[-1]:.1f}% @ {lr.efc[-1]:.0f} EFC)",
+        label=f"LFP, PJM RegD (+{lr.delta_r_pct[-1]:.1f}% @ {lr.efc[-1]:.0f} EFC)",
     )
     ax_res.set_title(
         "(d) Coupled Ohmic & Polarization Resistance Growth ΔR / R_BOL (%)",

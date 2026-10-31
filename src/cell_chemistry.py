@@ -3,10 +3,10 @@
 Provides two experimentally derived open-circuit potential and entropic datasets
 extracted at 1% SoC resolution from PyBaMM 26.10.1.1 stoichiometric balances:
 
-1. ``NMC811_LG_M50_5AH`` — LG Chem INR21700-M50 (5.0 Ah, NMC811 / Graphite-SiOx),
+1. ``NMC811_LG_M50_5AH``, LG Chem INR21700-M50 (5.0 Ah, NMC811 / Graphite-SiOx),
    OCV and entropic dU/dT from O'Regan et al., Electrochimica Acta 425, 140700 (2022)
    (PyBaMM parameter set ``"ORegan2022"``).
-2. ``LFP_A123_ANR26650_2P3AH`` — A123 Systems ANR26650M1-B (2.3 Ah, LiFePO4 / Graphite),
+2. ``LFP_A123_ANR26650_2P3AH``, A123 Systems ANR26650M1-B (2.3 Ah, LiFePO4 / Graphite),
    equilibrium OCV from Prada et al., J. Electrochem. Soc. 160(4), A616 (2013)
    (PyBaMM parameter set ``"Prada2013"``), paired with Plett one-state hysteresis
    parameters representative of olivine LiFePO4 two-phase plateaus.

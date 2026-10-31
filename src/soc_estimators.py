@@ -3,14 +3,14 @@
 Implements three state estimators operating on noisy, bias-corrupted current and
 terminal-voltage measurements of a :class:`~src.ecm_2rc.TwoRCBatteryModel`:
 
-1. :class:`CoulombCountingEstimator` — Open-loop ampere-hour integration baseline
+1. :class:`CoulombCountingEstimator`, Open-loop ampere-hour integration baseline
    (demonstrates unbounded linear SoC drift under persistent Hall-sensor current bias
    and inability to recover from boot-up SoC initialization offsets).
-2. :class:`ExtendedKalmanFilterEstimator` (EKF) — Analytical discrete-time Jacobian
+2. :class:`ExtendedKalmanFilterEstimator` (EKF), Analytical discrete-time Jacobian
    linearization (including off-diagonal SoC-impedance dV_rc/dSoC chain-rule terms and
    exact PCHIP dU_ocv/dSoC measurement slopes) with Bucy-Joseph positive-definite
    covariance updates and Normalized Innovation Squared (NIS) outlier gating.
-3. :class:`UnscentedKalmanFilterEstimator` (UKF) — Scaled Unscented Transform (Wan &
+3. :class:`UnscentedKalmanFilterEstimator` (UKF), Scaled Unscented Transform (Wan &
    van der Merwe, 2000) propagating 2n + 1 = 7 deterministic sigma points through the
    full nonlinear 2RC electro-thermal + PCHIP OCV equations without linearization.
 """

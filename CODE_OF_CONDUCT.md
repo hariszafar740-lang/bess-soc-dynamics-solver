@@ -2,12 +2,8 @@
 
 ## Our Pledge
 
-We as members, contributors, and maintainers pledge to make participation in our
-community a harassment-free experience for everyone, regardless of age, body
-size, visible or invisible disability, ethnicity, sex characteristics, gender
-identity and expression, level of experience, education, socio-economic status,
-nationality, personal appearance, race, caste, color, religion, or sexual
-identity and orientation.
+We as members, contributors, and maintainers pledge to make participation in our community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability.
+Ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
 
 ## Our Standards
 
@@ -25,11 +21,9 @@ Examples of unacceptable behavior include:
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the repository maintainer via GitHub Issues or private security
-advisories. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the repository maintainer via GitHub Issues or private security advisories.
+All complaints will be reviewed and investigated promptly and fairly.
 
 ## Attribution
 
-This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org),
-version 2.1.
+This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 2.1.

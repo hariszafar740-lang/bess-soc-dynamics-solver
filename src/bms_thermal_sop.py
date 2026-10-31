@@ -18,9 +18,9 @@ Coupled with :class:`~src.ecm_2rc.TwoRCBatteryModel` (impedances and Bernardi re
 heat evaluated at electrochemically active jelly-roll temperature T_core), this module
 provides:
 - :class:`TwoNodeThermalNetwork` and :class:`CoupledTwoNodeBESS`
-- :func:`simulate_cc_cv_charge` — zero-overshoot implicit CC-CV fast-charging with
+- :func:`simulate_cc_cv_charge`, zero-overshoot implicit CC-CV fast-charging with
   active T_core ceiling derating
-- :func:`compute_sop_limits` — multi-constraint receding-horizon State-of-Power (SOP)
+- :func:`compute_sop_limits`, multi-constraint receding-horizon State-of-Power (SOP)
   BMS power-envelope solver (Plett, BMS Vol. II, Ch. 6) identifying the active physical
   bottleneck ("current", "soc", "voltage", or "thermal_core")
 """

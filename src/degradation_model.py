@@ -2,7 +2,7 @@
 
 Implements two coupled components for multi-year BESS lifetime & grid-duty assessment:
 
-1. **Exact ASTM E1049-85 Four-Point Rainflow Cycle Extractor** (:func:`extract_turning_points`,
+1. Exact ASTM E1049-85 Four-Point Rainflow Cycle Extractor (:func:`extract_turning_points`,
    :func:`extract_rainflow_cycles`):
    Decomposes arbitrary non-monotonic State-of-Charge trajectories ``soc(t)`` (such as PJM
    ``RegD`` frequency-regulation micro-cycles superimposed on daily arbitrage) into closed
@@ -10,7 +10,7 @@ Implements two coupled components for multi-year BESS lifetime & grid-duty asses
    exact topological throughput identity ``sum(2 * count_i * dod_i) == sum(|diff(soc)|)`` to
    machine precision when ``min_reversal_dod = 0``.
 
-2. **Path-Consistent Virtual-Age Semi-Empirical Degradation Engine** (:class:`DegradationSpec`,
+2. Path-Consistent Virtual-Age Semi-Empirical Degradation Engine (:class:`DegradationSpec`,
    :class:`SemiEmpiricalAgingModel`, :func:`simulate_grid_duty_aging`):
    Couples diffusion-limited SEI calendar aging (``t^z_cal``, Schmalstieg et al., J. Power
    Sources 257, 325-334, 2014), Wöhler power-law DoD cycle fatigue (Xu et al., IEEE Trans.

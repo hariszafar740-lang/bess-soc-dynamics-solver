@@ -18,7 +18,7 @@ WORKBENCH_VERSION = "1.0.0"
 BENCHMARK_FIGURES: tuple[dict[str, str], ...] = (
     {
         "file": "bess_dynamic_response.png",
-        "title": "Figure 1 — Coupled 1RC Electro-Thermal Pulsed Discharge (3C @ 25 °C)",
+        "title": "Figure 1, Coupled 1RC Electro-Thermal Pulsed Discharge (3C @ 25 °C)",
         "caption": (
             "Min V_term = 3.181 V | Peak T_cell = 30.97 °C | Final SoC = 25.0% "
             "(exact ZOH RC + Joule-convective step)."
@@ -26,7 +26,7 @@ BENCHMARK_FIGURES: tuple[dict[str, str], ...] = (
     },
     {
         "file": "chemistry_2rc_comparison.png",
-        "title": "Figure 2 — 2RC Chemistry Comparison: NMC811 vs. LFP, Bernardi Heat & EIS Nyquist",
+        "title": "Figure 2, 2RC Chemistry Comparison: NMC811 vs. LFP, Bernardi Heat & EIS Nyquist",
         "caption": (
             "PyBaMM 26.10.1.1 OCV/entropic PCHIP splines, Plett hysteresis, "
             "reversible cooling/heating, and 10/25/45 °C EIS arcs."
@@ -34,7 +34,7 @@ BENCHMARK_FIGURES: tuple[dict[str, str], ...] = (
     },
     {
         "file": "soc_ekf_ukf_benchmark.png",
-        "title": "Figure 3 — Closed-Loop Nonlinear SoC Estimation: EKF & UKF vs. Biased Coulomb Counting",
+        "title": "Figure 3, Closed-Loop Nonlinear SoC Estimation: EKF & UKF vs. Biased Coulomb Counting",
         "caption": (
             "Recovers -23% initial SoC offset under +0.05C drift: "
             "NMC811 EKF/UKF = 1.26%/1.28% RMSE; LFP EKF/UKF = 7.19%/6.69%."
@@ -42,7 +42,7 @@ BENCHMARK_FIGURES: tuple[dict[str, str], ...] = (
     },
     {
         "file": "thermal_sop_derating.png",
-        "title": "Figure 4 — 2-Node Radial Core–Surface Thermal Divergence, CC-CV Taper & Horizon SOP",
+        "title": "Figure 4, 2-Node Radial Core–Surface Thermal Divergence, CC-CV Taper & Horizon SOP",
         "caption": (
             "8.67 °C peak radial gradient, zero-overshoot 2C CC-CV (15.6/26.7 min), "
             "and sub-zero 0 °C Li-plating charge lockout."
@@ -50,7 +50,7 @@ BENCHMARK_FIGURES: tuple[dict[str, str], ...] = (
     },
     {
         "file": "degradation_rainflow_aging.png",
-        "title": "Figure 5 — ASTM E1049-85 Rainflow Decomposition, 12-Year SoH & Waldmann V-Curve",
+        "title": "Figure 5, ASTM E1049-85 Rainflow Decomposition, 12-Year SoH & Waldmann V-Curve",
         "caption": (
             "Deep arbitrage EoL = 4.1 yr (NMC811) vs. 11.0 yr (LFP); "
             "PJM RegD 12-yr SoH = 80.9% / 87.7%; 20 °C fade minimum."
@@ -261,7 +261,7 @@ footer {
 }
 """
 
-APP_JS = r"""/* Interactive Physics Engine & HiDPI Canvas Renderer — bess_solver v1.0.0 */
+APP_JS = r"""/* Interactive Physics Engine & HiDPI Canvas Renderer, bess_solver v1.0.0 */
 (function () {
   "use strict";
 
@@ -731,7 +731,7 @@ APP_JS = r"""/* Interactive Physics Engine & HiDPI Canvas Renderer — bess_solv
       const eis10 = spec.eis_50soc["10"], eis25 = spec.eis_50soc["25"], eis45 = spec.eis_50soc["45"];
       drawLinePlot(els.cAging, {
         xMin: 0, xMax: Math.max.apply(null, eis10.re_mohm) * 1.05, yDecimals: 1, xDecimals: 0,
-        xLabel: "Re{Z(jω)} (mΩ) — 10 °C (blue), 25 °C (teal), 45 °C (amber)",
+        xLabel: "Re{Z(jω)} (mΩ), 10 °C (blue), 25 °C (teal), 45 °C (amber)",
         series: [
           { x: eis10.re_mohm, y: eis10.neg_im_mohm, color: "#60a5fa", width: 2.2 },
           { x: eis25.re_mohm, y: eis25.neg_im_mohm, color: "#2dd4bf", width: 2.2 },
@@ -846,8 +846,8 @@ def _render_index_html(presets: dict[str, Any], has_figures: bool) -> str:
       <div class="control-item">
         <label for="ctrl-chemistry">Cell Chemistry</label>
         <select id="ctrl-chemistry">
-          <option value="nmc811">NMC811 — LG INR21700-M50 (5.0 Ah)</option>
-          <option value="lfp">LFP — A123 ANR26650M1B (2.3 Ah)</option>
+          <option value="nmc811">NMC811, LG INR21700-M50 (5.0 Ah)</option>
+          <option value="lfp">LFP, A123 ANR26650M1B (2.3 Ah)</option>
         </select>
       </div>
       <div class="control-item">
@@ -967,7 +967,7 @@ def _render_index_html(presets: dict[str, Any], has_figures: bool) -> str:
     </section>
 
     <footer>
-      <span>MIT License — Haris Zafar (<code>hariszafar740-lang/bess-soc-dynamics-solver</code>)</span>
+      <span>MIT License, Haris Zafar (<code>hariszafar740-lang/bess-soc-dynamics-solver</code>)</span>
       <span>Single-cell electro-thermal, BMS SOP &amp; semi-empirical degradation solver (v{WORKBENCH_VERSION})</span>
     </footer>
   </div>
