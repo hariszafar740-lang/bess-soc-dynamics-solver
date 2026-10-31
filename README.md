@@ -5,6 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/hariszafar740-lang/bess-soc-dynamics-solver)](https://github.com/hariszafar740-lang/bess-soc-dynamics-solver/releases/tag/v1.0.0)
 ![Python Version](https://img.shields.io/badge/python-3.10%E2%80%933.13-blue)
 ![Typing](https://img.shields.io/badge/typing-PEP%20561-informational)
+[![PyPI](https://img.shields.io/pypi/v/bess-soc-dynamics-solver?color=blue)](https://pypi.org/project/bess-soc-dynamics-solver/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > **Live Interactive Browser Workbench (Zero-CDN HTML5/Canvas):**
