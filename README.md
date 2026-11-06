@@ -18,6 +18,18 @@ I would read the thermal numbers as model output rather than measurement: the co
 
 > **Scope and validation status.** Equilibrium open-circuit voltage (`OCV`) and entropic (`dU/dT`) lookup tables in `src/cell_chemistry.py` are extracted at 1% SoC resolution from published electrode parameterizations in `PyBaMM 26.10.1.1` (`O'Regan et al., 2022` for LG M50 NMC811; `Prada et al., 2013` for A123 26650 LFP) and verified in CI (`tests/test_pybamm_crosscheck.py`). Dynamic 2RC resistances, capacitances, hysteresis scales, and lumped convective coefficients remain representative single-cell engineering values rather than pack-level or safety-certified manufacturer specifications.
 
+## Install
+
+```bash
+pip install bess-soc-dynamics-solver
+```
+
+Then `bess-sim --help`.
+
+The headline number below is re-checked against the published wheel on every
+release by [energy-systems-benchmarks](https://github.com/hariszafar740-lang/energy-systems-benchmarks), and what that check does not cover
+is written up in [the engineering note](https://github.com/hariszafar740-lang/hariszafar740-lang/blob/main/notes/five-packages.md).
+
 ## Quantitative Verification & Benchmark Summary (`v1.0.0`)
 
 | Subsystem / Module | Physical Formulation & Numerical Method | Verified Benchmark Metric |
